@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #3F71B7;
+  --color-primary-hover: #3365AC;
+  --color-primary-light: #ECF1F8;
+  --color-primary-accent: #4D7CBC;
+  --color-primary-dark: #2E42A5;
+
+  --color-accent: #E02828;
+  --color-accent-hover: #D43030;
+  --color-accent-bright: #F50100;
+
+  --color-neutral-dark: #000000;
+  --color-neutral-muted: #556275;
+  --color-neutral-light: #ECECEC;
+
+  --color-background: #F4F6F9;
+
+  --font-sans: "Plus Jakarta Sans", "Poppins", sans-serif;
+  
+  --text-headline-1: 40px;
+  --text-headline-2: 30px;
+  --text-headline-3: 20px;
+  --text-headline-4: 16px;
+  --text-paragraph: 14px;
+  --text-alt-paragraph: 12px;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-background);
+    color: var(--color-neutral-dark);
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  /* Typography classes */
+  .headline-1 {
+    font-size: var(--text-headline-1);
+    line-height: 140%;
+    font-weight: 700;
+  }
+  .headline-2 {
+    font-size: var(--text-headline-2);
+    line-height: 140%;
+    font-weight: 700;
+  }
+  .headline-3 {
+    font-size: var(--text-headline-3);
+    line-height: 140%;
+    font-weight: 600;
+  }
+  .headline-4 {
+    font-size: var(--text-headline-4);
+    line-height: 140%;
+    font-weight: 600;
+  }
+  .paragraph {
+    font-size: var(--text-paragraph);
+    line-height: 150%;
+    font-weight: 400;
+  }
+  .alternative-paragraph {
+    font-size: var(--text-alt-paragraph);
+    line-height: 150%;
+    font-weight: 400;
+  }
+
+  /* Premium scrollbar styles */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+    border-radius: 9999px;
+    transition: background-color 0.2s;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+  }
+}
