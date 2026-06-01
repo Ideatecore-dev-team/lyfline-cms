@@ -1,0 +1,18 @@
+echo "🔍 Running pre-commit validation checks (lint & build)..."
+
+# Run linting
+if ! pnpm run lint; then
+  echo ""
+  echo "❌ [PRE-COMMIT ERROR] ESLint checks failed! Please fix the linting errors listed above before committing."
+  exit 1
+fi
+
+# Run production build
+if ! pnpm run build; then
+  echo ""
+  echo "❌ [PRE-COMMIT ERROR] Production build failed! Please fix the compilation errors listed above before committing."
+  exit 1
+fi
+
+echo ""
+echo "✅ [PRE-COMMIT SUCCESS] All checks passed successfully! Proceeding with commit..."
