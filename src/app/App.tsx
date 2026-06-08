@@ -19,7 +19,13 @@ const LoadingSpinner = () => (
 const LoginPage = lazy(() => import("../pages/login/LoginPage"));
 const DashboardPage = lazy(() => import("../pages/dashboard/DashboardPage"));
 const ArticleManagementPage = lazy(() => import("../pages/article-management/ArticleManagementPage"));
+const ManageArticleForm = lazy(() => import("../pages/article-management/manageArticleForm"));
 const UserManagementPage = lazy(() => import("../pages/user-management/UserManagementPage"));
+const PromoManagementPage = lazy(() => import("../pages/promo-management/promoManagementPage"));
+const PartnersManagementPage = lazy(() => import("../pages/partners-management/partnersManagementPage"));
+const ManagePartnersForm = lazy(() => import("../pages/partners-management/managePartnersForm"));
+const DoctorManagementPage = lazy(() => import("../pages/doctor-management/doctorManagementPage"));
+const ManageDoctorsForm = lazy(() => import("../pages/doctor-management/manageDoctorsForm"));
 
 export default function App() {
   return (
@@ -39,12 +45,21 @@ export default function App() {
             <Route element={<CmsLayout />}>
               <Route path="/cms/dashboard" element={<DashboardPage />} />
               <Route path="/cms/article" element={<ArticleManagementPage />} />
+              <Route path="/cms/article/add" element={<ManageArticleForm />} />
+              <Route path="/cms/article/edit/:id" element={<ManageArticleForm />} />
               <Route path="/cms/users" element={<UserManagementPage />} />
+              <Route path="/cms/promo" element={<PromoManagementPage />} />
+              <Route path="/cms/partners" element={<PartnersManagementPage />} />
+              <Route path="/cms/partners/add" element={<ManagePartnersForm />} />
+              <Route path="/cms/partners/edit/:id" element={<ManagePartnersForm />} />
+              <Route path="/cms/doctors" element={<DoctorManagementPage />} />
+              <Route path="/cms/doctors/add" element={<ManageDoctorsForm />} />
+              <Route path="/cms/doctors/edit/:id" element={<ManageDoctorsForm />} />
             </Route>
           </Route>
 
           {/* Fallback */}
-          <Route path="*" element={<Navigate to="/cms/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/cms/users" replace />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

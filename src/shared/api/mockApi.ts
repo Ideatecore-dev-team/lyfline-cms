@@ -15,7 +15,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'editor';
+  role: 'super_admin' | 'admin' | 'editor';
   createdAt: string;
 }
 
@@ -57,14 +57,14 @@ const DEFAULT_USERS: User[] = [
     id: "usr-1",
     name: "Jane Doe",
     email: "jane.doe@lyfline.com",
-    role: "admin",
+    role: "super_admin",
     createdAt: "2026-01-10T09:00:00Z"
   },
   {
     id: "usr-2",
     name: "John Smith",
     email: "john.smith@lyfline.com",
-    role: "editor",
+    role: "admin",
     createdAt: "2026-02-15T10:30:00Z"
   }
 ];
