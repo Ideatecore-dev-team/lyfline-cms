@@ -1,38 +1,59 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { FiGrid, FiFileText, FiUsers } from "react-icons/fi";
-import { mockApi, type User } from "../shared/api/mockApi";
+import { authApi, type User } from "../shared/api/auth";
 
-function Sidebar() {
-  const [currentUser] = useState<User | null>(() => mockApi.getCurrentUser());
+interface SidebarProps {
+  minimal?: boolean;
+}
+
+function Sidebar({ minimal = false }: SidebarProps) {
+  const [currentUser] = useState<User | null>(() => authApi.getCurrentUser());
 
   const menuItems = [
     {
-      id: "dashboard",
-      label: "Dashboard",
-      to: "/cms/dashboard",
-      icon: <FiGrid className="w-5 h-5" />,
-      allowedRoles: ["admin", "editor"],
-    },
-    {
-      id: "article",
-      label: "Article Management",
-      to: "/cms/article",
-      icon: <FiFileText className="w-5 h-5" />,
-      allowedRoles: ["admin", "editor"],
-    },
-    {
       id: "users",
-      label: "User Management",
+      label: "Manage User",
       to: "/cms/users",
-      icon: <FiUsers className="w-5 h-5" />,
-      allowedRoles: ["admin"], // Admin-only option
+      icon: "Profile Add 2",
+      allowedRoles: ["super_admin"],
+    },
+    {
+      id: "promo",
+      label: "Manage Promo",
+      to: "/cms/promo",
+      icon: "Ticket Discount",
+      allowedRoles: ["super_admin", "admin"],
+    },
+    {
+      id: "partners",
+      label: "Manage Partners",
+      to: "/cms/partners",
+      icon: "Group 1",
+      allowedRoles: ["super_admin", "admin"],
+    },
+    {
+      id: "doctors",
+      label: "Manage Doctors",
+      to: "/cms/doctors",
+      icon: "Activity 1",
+      allowedRoles: ["super_admin", "admin"],
+    },
+    {
+      id: "articles",
+      label: "Manage Articles",
+      to: "/cms/article",
+      icon: "Pen",
+      allowedRoles: ["super_admin", "admin"],
     },
   ];
 
-  return (
-    <aside className="w-64 bg-white border-r border-neutral-light min-h-[calc(100vh-4rem)] shrink-0">
-      <div className="p-4 flex flex-col gap-1">
+  const menuContent = (
+    <div className="w-72 p-6 bg-white rounded-[32px] flex flex-col justify-start items-stretch gap-4 shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border border-slate-100/50 shrink-0 sticky top-6">
+      <div className="self-stretch justify-start text-[#95B0D7] text-sm tracking-wider font-sans uppercase">
+        MENU BAR
+      </div>
+
+      <div className="flex flex-col gap-2">
         {menuItems.map((menu) => {
           // Check role restrictions
           if (currentUser && !menu.allowedRoles.includes(currentUser.role)) {
@@ -43,20 +64,41 @@ function Sidebar() {
             <NavLink
               key={menu.id}
               to={menu.to}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-neutral-muted hover:bg-neutral-light/50 hover:text-neutral-dark"
+              className={({ isActive }: { isActive: boolean }) =>
+                `self-stretch h-12 px-4 py-3 rounded-[48px] inline-flex justify-start items-center gap-2.5 text-base font-medium font-sans cursor-pointer active:scale-98 transition-all ${isActive
+                  ? "bg-linear-to-r from-primary to-primary-hover text-white"
+                  : "bg-transparent text-primary hover:bg-primary/10"
                 }`
               }
             >
-              {menu.icon}
-              <span>{menu.label}</span>
+              {({ isActive }: { isActive: boolean }) => (
+                <>
+                  <span
+                    style={{
+                      maskImage: `url("/icons/${menu.icon}.svg")`,
+                      WebkitMaskImage: `url("/icons/${menu.icon}.svg")`,
+                    }}
+                    className={`size-6 mask-contain mask-no-repeat mask-center shrink-0 transition-colors ${isActive ? "bg-white" : "bg-primary"
+                      }`}
+                    aria-hidden="true"
+                  />
+                  <span>{menu.label}</span>
+                </>
+              )}
             </NavLink>
           );
         })}
       </div>
+    </div>
+  );
+
+  if (minimal) {
+    return menuContent;
+  }
+
+  return (
+    <aside className="w-80 p-6 bg-primary-light shrink-0 border-r border-slate-200 flex flex-col items-center">
+      {menuContent}
     </aside>
   );
 }

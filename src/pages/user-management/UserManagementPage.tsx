@@ -1,24 +1,39 @@
 import { useEffect, useState } from "react";
-import { FiTrash2, FiUserPlus, FiAlertCircle, FiX } from "react-icons/fi";
-import { mockApi, type User } from "../../shared/api/mockApi";
+import { type User, authApi } from "../../shared/api/auth";
+import { lookupUsers } from "../../shared/api/user/lookupUser";
+import { addUser } from "../../shared/api/user/addUser";
+import { editUser } from "../../shared/api/user/editUser";
+import { deleteUser } from "../../shared/api/user/deleteUser";
+import Sidebar from "../../widgets/Sidebar";
+import Button from "../../component/button";
+import ManageUserModal from "../../component/modal/manageUser";
+import Badge from "../../component/badge";
+import DeleteConfirmationModal from "../../component/modal/deleteConfirmation";
+
+const Icon = ({ name, className = "size-5 bg-current" }: { name: string; className?: string }) => (
+  <span
+    style={{
+      maskImage: `url("/icons/${name}.svg")`,
+      WebkitMaskImage: `url("/icons/${name}.svg")`,
+    }}
+    className={`mask-contain mask-no-repeat mask-center shrink-0 inline-block ${className}`}
+    aria-hidden="true"
+  />
+);
 
 function UserManagementPage() {
   const [users, setUsers] = useState<User[]>([]);
-  const [currentUser] = useState<User | null>(() => mockApi.getCurrentUser());
+  const [currentUser] = useState<User | null>(() => authApi.getCurrentUser());
   const [loading, setLoading] = useState(true);
 
   // Form states
   const [showAddModal, setShowAddModal] = useState(false);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"admin" | "editor">("editor");
-  const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const data = await mockApi.getUsers();
+      const data = await lookupUsers();
       setUsers(data);
     } catch (err) {
       console.error("Error loading users", err);
@@ -28,248 +43,247 @@ function UserManagementPage() {
   };
 
   useEffect(() => {
-    setTimeout(() => {
-      fetchUsers();
-    }, 0);
+    fetchUsers();
   }, []);
 
-  const handleAddUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    if (!name.trim()) {
-      setError("Name is required.");
-      return;
-    }
-    if (!email.trim() || !email.includes("@")) {
-      setError("A valid email address is required.");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      await mockApi.createUser({
-        name,
-        email,
-        role,
-      });
-
-      // Clear form and reload
-      setName("");
-      setEmail("");
-      setRole("editor");
-      setShowAddModal(false);
-      fetchUsers();
-    } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : String(err);
-      setError(errMsg || "Failed to create user.");
-    } finally {
-      setSubmitting(false);
-    }
+  const handleEditClick = (user: User) => {
+    setEditingUser(user);
+    setShowAddModal(false);
   };
 
-  const handleDeleteUser = async (id: string, userName: string) => {
-    // Prevent deleting oneself
-    if (currentUser && currentUser.id === id) {
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+
+  const handleDeleteClick = (user: User) => {
+    if (currentUser && currentUser.id === user.id) {
       alert("You cannot delete your own account.");
       return;
     }
+    setUserToDelete(user);
+  };
 
-    if (window.confirm(`Are you sure you want to remove administrator "${userName}"?`)) {
-      try {
-        await mockApi.deleteUser(id);
-        fetchUsers();
-      } catch {
-        alert("Failed to delete user.");
-      }
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return;
+    try {
+      await deleteUser(userToDelete.id);
+      fetchUsers();
+    } catch (err: any) {
+      alert("Failed to delete user: " + (err.message || err));
     }
   };
 
-  // Block non-admin roles completely from viewing this page
-  if (currentUser && currentUser.role !== "admin") {
+  if (currentUser && currentUser.role !== "super_admin") {
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh] bg-white rounded-2xl border border-neutral-light shadow-sm p-8 text-center animate-fade-in-up">
-        <div className="p-4 bg-accent/10 rounded-full text-accent mb-4">
-          <FiAlertCircle className="w-12 h-12" />
+      <div className="w-full px-0 py-8 inline-flex justify-center items-start gap-6 overflow-hidden">
+        <Sidebar minimal />
+        <div className="flex-1 p-8 bg-white rounded-[32px] flex flex-col items-center justify-center min-h-[400px] border border-gray-100 shadow-sm text-center">
+          <div className="p-4 bg-red-50 rounded-full text-red-500 mb-4">
+            <Icon name="Danger Circle" className="size-12 bg-current" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-800 font-sans">Access Denied</h2>
+          <p className="text-sm text-slate-500 max-w-sm mt-2 font-sans">
+            You do not have the required administrative permissions to manage portal accounts.
+          </p>
         </div>
-        <h2 className="text-xl font-bold text-neutral-dark">Access Denied</h2>
-        <p className="text-sm text-neutral-muted max-w-sm mt-2">
-          You do not have the required administrative permissions to manage portal accounts.
-        </p>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-neutral-light shadow-sm">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-neutral-dark">
-            User Management
-          </h1>
-          <p className="text-sm text-neutral-muted">
-            Manage portal administrative accounts and control system access.
-          </p>
-        </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-4 py-2.5 rounded-xl font-medium shadow-sm transition-all text-sm"
-        >
-          <FiUserPlus className="w-4 h-4" />
-          <span>Add Admin Account</span>
-        </button>
-      </div>
+    <div className="w-full px-0 py-8 inline-flex justify-center items-start gap-6 bg-background">
+      {/* Left Sidebar */}
+      <Sidebar minimal />
 
-      {/* Users Table */}
-      <div className="bg-white rounded-2xl border border-neutral-light shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-neutral-light/30 border-b border-neutral-light text-neutral-muted font-bold text-xs uppercase tracking-wider">
-                <th className="py-4 px-6">Name</th>
-                <th className="py-4 px-6">Email Address</th>
-                <th className="py-4 px-6">Role</th>
-                <th className="py-4 px-6">Date Created</th>
-                <th className="py-4 px-6 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-light">
-              {users.map((user) => (
-                <tr key={user.id} className="hover:bg-neutral-light/10 transition-colors text-sm text-neutral-dark">
-                  <td className="py-4 px-6 font-bold">{user.name}</td>
-                  <td className="py-4 px-6">{user.email}</td>
-                  <td className="py-4 px-6 capitalize">
-                    <span className={`px-2.5 py-0.5 rounded-lg text-xs font-semibold ${
-                      user.role === 'admin'
-                        ? "bg-primary/10 text-primary"
-                        : "bg-indigo-50 text-indigo-600"
-                    }`}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    {new Date(user.createdAt).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </td>
-                  <td className="py-4 px-6 text-right whitespace-nowrap">
-                    <button
-                      onClick={() => handleDeleteUser(user.id, user.name)}
-                      disabled={currentUser?.id === user.id}
-                      title="Remove Account"
-                      className="inline-flex items-center justify-center p-2 rounded-lg text-neutral-muted hover:text-accent hover:bg-accent/10 transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-neutral-muted"
-                    >
-                      <FiTrash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Add User Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-dark/40 backdrop-blur-sm animate-fade-in-up">
-          <div className="bg-white rounded-2xl border border-neutral-light shadow-2xl w-full max-w-md overflow-hidden animate-scale-up">
-            <div className="p-6 border-b border-neutral-light flex justify-between items-center bg-neutral-light/20">
-              <h3 className="font-extrabold text-neutral-dark text-lg flex items-center gap-2">
-                <FiUserPlus className="text-primary" />
-                <span>Add Admin Account</span>
-              </h3>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="p-1 rounded-lg text-neutral-muted hover:bg-neutral-light/50 hover:text-neutral-dark transition-all"
-              >
-                <FiX className="w-5 h-5" />
-              </button>
+      {/* Main Content Card */}
+      <div className="flex-1 p-6 bg-white rounded-[32px] inline-flex flex-col justify-start items-start gap-6 overflow-hidden shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border border-slate-100/50">
+        {/* Header Block */}
+        <div className="self-stretch inline-flex justify-start items-start gap-6">
+          <div className="flex-1 inline-flex flex-col justify-start items-start gap-2">
+            <div className="self-stretch justify-start text-primary text-3xl font-medium font-['Poppins']">
+              Manage User
             </div>
-
-            <form onSubmit={handleAddUser} className="p-6 space-y-4">
-              {error && (
-                <div className="p-4 rounded-xl bg-accent-light/10 border border-accent/20 text-accent text-sm font-medium flex items-center gap-2">
-                  <FiAlertCircle className="w-5 h-5 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              {/* Name */}
-              <div>
-                <label className="block text-xs font-semibold text-neutral-muted uppercase tracking-wider mb-2">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Jane Doe"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="block w-full px-4 py-2.5 border border-neutral-light rounded-xl text-neutral-dark focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm"
-                />
-              </div>
-
-              {/* Email */}
-              <div>
-                <label className="block text-xs font-semibold text-neutral-muted uppercase tracking-wider mb-2">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  required
-                  placeholder="e.g. jane.doe@lyfline.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full px-4 py-2.5 border border-neutral-light rounded-xl text-neutral-dark focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm"
-                />
-              </div>
-
-              {/* Role Selection */}
-              <div>
-                <label className="block text-xs font-semibold text-neutral-muted uppercase tracking-wider mb-2">
-                  System Role
-                </label>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value as "admin" | "editor")}
-                  className="block w-full px-4 py-2.5 border border-neutral-light rounded-xl text-neutral-dark focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm"
-                >
-                  <option value="editor">Editor (Create & Edit Content)</option>
-                  <option value="admin">Administrator (Full System Control)</option>
-                </select>
-              </div>
-
-              <div className="pt-4 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded-xl border border-neutral-light text-neutral-muted hover:bg-neutral-light/30 hover:text-neutral-dark transition-all text-sm font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-xl font-semibold shadow-sm transition-all text-sm disabled:opacity-50"
-                >
-                  {submitting ? "Adding..." : "Add Account"}
-                </button>
-              </div>
-            </form>
+            <div className="justify-start">
+              <span className="text-black text-sm font-normal font-['Poppins']">
+                Manage your CMS account here, this page only visible to{" "}
+              </span>
+              <span className="text-primary text-sm font-medium font-['Poppins']">
+                Super Admin
+              </span>
+            </div>
           </div>
+          {/* Add User Button */}
+          <Button
+            onClick={() => {
+              setEditingUser(null);
+              setShowAddModal(true);
+            }}
+            text="Add User"
+            leftIcon="Add"
+          />
         </div>
-      )}
+
+        {/* Divider */}
+        <div className="self-stretch h-px bg-slate-100" />
+
+        {/* Table Container */}
+        <div className="self-stretch bg-white flex flex-col justify-start items-start gap-2 overflow-hidden">
+          {/* Table Header */}
+          <div className="self-stretch h-9 rounded-sm inline-flex justify-start items-start overflow-hidden">
+            <div className="w-16 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start">
+              <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden">
+                <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
+                  No.
+                </div>
+              </div>
+            </div>
+            <div className="flex-1 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start">
+              <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden">
+                <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
+                  Username
+                </div>
+              </div>
+            </div>
+            <div className="w-80 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start">
+              <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden">
+                <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
+                  Email
+                </div>
+              </div>
+            </div>
+            <div className="w-44 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start">
+              <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden">
+                <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
+                  Role
+                </div>
+              </div>
+            </div>
+            <div className="w-28 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start">
+              <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden">
+                <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
+                  Action
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Table Body */}
+          {loading && users.length === 0 ? (
+            <div className="self-stretch p-12 text-center text-slate-400 font-sans">
+              Loading users...
+            </div>
+          ) : users.length === 0 ? (
+            <div className="self-stretch p-12 text-center text-slate-400 font-sans">
+              No users found.
+            </div>
+          ) : (
+            users.map((user, index) => (
+              <div
+                key={user.id}
+                className="self-stretch bg-white/0 inline-flex justify-start items-center overflow-hidden border-b border-slate-100 hover:bg-slate-50/40 transition-colors"
+              >
+                <div className="w-16 self-stretch inline-flex flex-col justify-center items-start">
+                  <div className="self-stretch p-3 flex flex-col justify-center items-start overflow-hidden">
+                    <div className="self-stretch justify-start text-black/90 text-sm font-normal font-['Poppins']">
+                      {index + 1}.
+                    </div>
+                  </div>
+                </div>
+                <div className="flex-1 self-stretch inline-flex flex-col justify-center items-start">
+                  <div className="self-stretch flex-1 p-3 flex flex-col justify-center items-start overflow-hidden">
+                    <div className="self-stretch justify-start text-black/90 text-sm font-normal font-['Poppins']">
+                      {user.name}
+                    </div>
+                  </div>
+                </div>
+                <div className="w-80 self-stretch inline-flex flex-col justify-center items-start">
+                  <div className="self-stretch flex-1 p-3 flex flex-col justify-center items-start overflow-hidden">
+                    <div className="self-stretch justify-start text-neutral-900 text-sm font-normal font-['Poppins']">
+                      {user.email}
+                    </div>
+                  </div>
+                </div>
+                <div className="w-44 self-stretch inline-flex flex-col justify-center items-start">
+                  <div className="self-stretch flex-1 p-3 flex flex-col justify-center items-start overflow-hidden">
+                    <Badge
+                      text={
+                        user.role === "super_admin"
+                          ? "Super Admin"
+                          : user.role === "admin"
+                            ? "Admin"
+                            : user.role === "editor"
+                              ? "Editor"
+                              : user.role
+                      }
+                      variant={
+                        user.role === "super_admin"
+                          ? "purple"
+                          : user.role === "admin"
+                            ? "blue"
+                            : "blue"
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="w-28 px-3 flex justify-start items-center gap-4 py-2">
+                  {/* Edit Button */}
+                  <button
+                    onClick={() => handleEditClick(user)}
+                    className="size-9 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg outline -outline-offset-1 outline-slate-300 hover:outline-slate-500 flex justify-center items-center transition-all cursor-pointer active:scale-95"
+                    title="Edit User"
+                  >
+                    <Icon name="Pen" className="size-5 bg-current" />
+                  </button>
+                  {/* Delete Button */}
+                  <button
+                    onClick={() => handleDeleteClick(user)}
+                    disabled={currentUser?.id === user.id}
+                    className="size-9 bg-red-600 hover:bg-red-700 text-white rounded-lg flex justify-center items-center transition-all disabled:opacity-30 disabled:hover:bg-red-600 cursor-pointer active:scale-95"
+                    title="Delete User"
+                  >
+                    <Icon name="Delete 2" className="size-5 bg-current" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Add / Edit User Modal */}
+      <ManageUserModal
+        isOpen={showAddModal || !!editingUser}
+        user={editingUser}
+        onClose={() => {
+          setShowAddModal(false);
+          setEditingUser(null);
+        }}
+        onSubmit={async (data) => {
+          if (editingUser) {
+            await editUser(editingUser.id, data.name, data.email, data.password);
+
+            // Update current user cache if it was edited
+            if (currentUser && currentUser.id === editingUser.id) {
+              const updatedSelf = { ...currentUser, name: data.name, email: data.email };
+              localStorage.setItem('lyfline_current_user', JSON.stringify(updatedSelf));
+            }
+            fetchUsers();
+          } else {
+            if (!data.password) {
+              throw new Error("Password is required for adding a user.");
+            }
+            await addUser(data.name, data.email, data.password);
+            fetchUsers();
+          }
+        }}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={!!userToDelete}
+        onClose={() => setUserToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Remove User"
+        message={userToDelete ? `Are you sure you want to remove administrator "${userToDelete.name}"? This action cannot be undone.` : ""}
+      />
     </div>
   );
 }

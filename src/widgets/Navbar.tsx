@@ -1,49 +1,71 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { FiLogOut, FiUser } from "react-icons/fi";
-import { mockApi, type User } from "../shared/api/mockApi";
+import { authApi, type User } from "../shared/api/auth";
 
 function CmsNavbar() {
-  const [currentUser] = useState<User | null>(() => mockApi.getCurrentUser());
+  const [currentUser] = useState<User | null>(() => authApi.getCurrentUser());
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await mockApi.logout();
+    await authApi.logout();
     navigate("/cms");
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-white border-b border-neutral-light shadow-sm">
-      <div className="flex items-center justify-between h-16 px-6">
-        {/* Brand logo */}
-        <div className="flex items-center gap-3">
-          <Link to="/cms/dashboard" className="flex items-center gap-2">
-            <span className="text-xl font-bold tracking-tight text-primary">
-              Lyfline<span className="text-accent">CMS</span>
-            </span>
-          </Link>
-        </div>
+    <header className="sticky top-0 z-40 w-full bg-white border-b border-slate-200">
+      <div className="w-full px-12 py-3 bg-white flex justify-between items-center h-20">
+        {/* Brand Logo Link */}
+        <Link to="/cms/users" className="w-40 h-12 relative overflow-hidden flex items-center">
+          <img
+            className="w-40 h-12 object-contain"
+            src="/Lyfline-Logo.png"
+            alt="Lyfline Logo"
+          />
+        </Link>
 
-        {/* User profile & action */}
-        <div className="flex items-center gap-4">
-          {currentUser && (
-            <div className="flex items-center gap-3 text-right">
-              <div className="hidden sm:block">
-                <h4 className="text-sm font-semibold text-neutral-dark">{currentUser.name}</h4>
-                <p className="text-xs text-neutral-muted capitalize">{currentUser.role}</p>
+        {/* Navigation Actions */}
+        <div className="flex justify-start items-center gap-6">
+          {/* User Profile Info */}
+          <div className="flex justify-start items-center gap-4">
+            <div className="flex flex-col justify-start items-end text-right">
+              <div className="text-primary text-sm font-medium font-sans">
+                {currentUser?.name || "Username"}
               </div>
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary">
-                <FiUser className="w-4 h-4" />
+              <div className="text-black text-xs font-medium font-sans capitalize tracking-wider">
+                {currentUser?.role === "super_admin"
+                  ? "Super Admin"
+                  : currentUser?.role === "admin"
+                    ? "Admin"
+                    : currentUser?.role || "Admin"}
               </div>
             </div>
-          )}
+            {/* User Avatar Circle */}
+            <div className="w-14 h-14 bg-primary-light border-primary border rounded-full flex items-center justify-center shrink-0">
+              <span
+                style={{
+                  maskImage: 'url("/icons/Profile Octagon 2.svg")',
+                  WebkitMaskImage: 'url("/icons/Profile Octagon 2.svg")',
+                }}
+                className="size-8 bg-primary mask-contain mask-no-repeat mask-center"
+                aria-hidden="true"
+              />
+            </div>
+          </div>
 
+          {/* Logout Action Button */}
           <button
             onClick={handleLogout}
-            title="Sign out"
-            className="flex items-center justify-center w-9 h-9 text-neutral-muted rounded-lg hover:text-accent hover:bg-accent/10 transition-all border border-transparent hover:border-accent/20"
+            className="h-12 px-5 py-3 bg-accent hover:bg-accent-hover text-white rounded-[48px] flex justify-center items-center gap-2 font-medium font-sans cursor-pointer active:scale-98 transition-all shrink-0"
           >
-            <FiLogOut className="w-5 h-5" />
+            <span
+              style={{
+                maskImage: 'url("/icons/Logout.svg")',
+                WebkitMaskImage: 'url("/icons/Logout.svg")',
+              }}
+              className="size-5 bg-white mask-contain mask-no-repeat mask-center shrink-0"
+              aria-hidden="true"
+            />
+            <span className="leading-none text-base">Logout</span>
           </button>
         </div>
       </div>

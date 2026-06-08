@@ -1,0 +1,159 @@
+import { supabase } from "../../../supabaseClient";
+import { type Partner } from "../partner";
+import { mapPartnerRow } from "./lookupPartners";
+
+const BUCKET_NAME = "Lyfline Files";
+const LOGO_FOLDER = "Partners/Logo";
+const IMAGES_FOLDER = "Partners/Hospital Images";
+
+const getPathFromUrl = (url: string): string | null => {
+  try {
+    const decodeUrl = decodeURIComponent(url);
+    const searchString = `/public/${BUCKET_NAME}/`;
+    const index = decodeUrl.indexOf(searchString);
+    if (index !== -1) {
+      return decodeUrl.substring(index + searchString.length);
+    }
+  } catch (err) {
+    console.error("Failed to parse URL for deletion:", err);
+  }
+  return null;
+};
+
+export const editPartner = async (
+  id: string,
+  partnerData: Omit<Partner, "id" | "createdAt" | "updatedAt">,
+  logoFile?: File | null,
+  logoRemoved?: boolean,
+  newImageFiles?: File[],
+  keptImageUrls?: string[]
+): Promise<Partner> => {
+  // 1. Get current partner details to know what to delete
+  const { data: currentPartner, error: getError } = await supabase
+    .from("partners")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (getError) {
+    console.error("Error fetching partner for edit:", getError.message);
+    throw new Error(getError.message);
+  }
+
+  let finalLogoUrl = currentPartner.hospital_logo;
+  const storageFilesToDelete: string[] = [];
+
+  // 2. Handle Logo Changes
+  if (logoFile) {
+    // A new logo file was uploaded
+    const fileExt = logoFile.name.split(".").pop();
+    const fileName = `${id}_logo_${Date.now()}.${fileExt}`;
+    const filePath = `${LOGO_FOLDER}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(BUCKET_NAME)
+      .upload(filePath, logoFile, {
+        cacheControl: "3600",
+        upsert: true,
+      });
+
+    if (uploadError) {
+      throw new Error(`Logo upload failed: ${uploadError.message}`);
+    }
+
+    const { data: urlData } = supabase.storage
+      .from(BUCKET_NAME)
+      .getPublicUrl(filePath);
+
+    // Mark old logo for deletion if it exists
+    if (currentPartner.hospital_logo) {
+      const oldLogoPath = getPathFromUrl(currentPartner.hospital_logo);
+      if (oldLogoPath) storageFilesToDelete.push(oldLogoPath);
+    }
+
+    finalLogoUrl = urlData.publicUrl;
+  } else if (logoRemoved) {
+    // Logo was removed
+    if (currentPartner.hospital_logo) {
+      const oldLogoPath = getPathFromUrl(currentPartner.hospital_logo);
+      if (oldLogoPath) storageFilesToDelete.push(oldLogoPath);
+    }
+    finalLogoUrl = null;
+  }
+
+  // 3. Handle Hospital Images Changes
+  const finalImageUrls: string[] = keptImageUrls ? [...keptImageUrls] : [];
+
+  // Identify images that were removed
+  const currentImages: string[] = currentPartner.hospital_images || [];
+  currentImages.forEach((imgUrl) => {
+    if (!finalImageUrls.includes(imgUrl)) {
+      const path = getPathFromUrl(imgUrl);
+      if (path) storageFilesToDelete.push(path);
+    }
+  });
+
+  // Upload new image files
+  if (newImageFiles && newImageFiles.length > 0) {
+    for (let i = 0; i < newImageFiles.length; i++) {
+      const file = newImageFiles[i];
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${id}_img_${i}_${Date.now()}.${fileExt}`;
+      const filePath = `${IMAGES_FOLDER}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(BUCKET_NAME)
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: true,
+        });
+
+      if (uploadError) {
+        throw new Error(`Hospital image ${i + 1} upload failed: ${uploadError.message}`);
+      }
+
+      const { data: urlData } = supabase.storage
+        .from(BUCKET_NAME)
+        .getPublicUrl(filePath);
+
+      finalImageUrls.push(urlData.publicUrl);
+    }
+  }
+
+  // 4. Update the DB row
+  const { data, error: updateError } = await supabase
+    .from("partners")
+    .update({
+      hospital_name: partnerData.hospitalName,
+      city: partnerData.city,
+      country: partnerData.country,
+      description: partnerData.description || null,
+      contact: partnerData.contact || null,
+      email: partnerData.email || null,
+      address: partnerData.address,
+      hospital_logo: finalLogoUrl,
+      hospital_images: finalImageUrls,
+      google_maps_link: partnerData.googleMapsLink || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (updateError) {
+    console.error("Error updating partner row:", updateError.message);
+    throw new Error(updateError.message);
+  }
+
+  // 5. Clean up old storage files after successful DB update
+  if (storageFilesToDelete.length > 0) {
+    const { error: deleteError } = await supabase.storage
+      .from(BUCKET_NAME)
+      .remove(storageFilesToDelete);
+    if (deleteError) {
+      console.warn("Could not clean up some edited storage files:", deleteError.message);
+    }
+  }
+
+  return mapPartnerRow(data);
+};
