@@ -7,6 +7,8 @@ import InputBox from "../../component/inputbox";
 import UploadFile from "../../component/uploadFile";
 import Dropdown from "../../component/dropdown";
 import DescriptionBox from "../../component/descriptionBox";
+import GooglaMapsPreviewModal from "../../component/modal/googlaMapsPreview";
+import Notification from "../../component/notification";
 import { addPartner, editPartner, getPartnerById } from "../../shared/api/partner";
 
 const Icon = ({ name, className = "size-5 bg-current" }: { name: string; className?: string }) => (
@@ -41,6 +43,25 @@ export default function ManagePartnersForm() {
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
+    const [showMapsPreview, setShowMapsPreview] = useState(false);
+
+    const [notification, setNotification] = useState<{
+        isOpen: boolean;
+        message: string;
+        type: "success" | "error" | "default";
+    }>({
+        isOpen: false,
+        message: "",
+        type: "default",
+    });
+
+    const showNotif = (message: string, type: "success" | "error" | "default" = "success") => {
+        setNotification({
+            isOpen: true,
+            message,
+            type,
+        });
+    };
 
     useEffect(() => {
         if (!id) return;
@@ -90,12 +111,12 @@ export default function ManagePartnersForm() {
         }
 
         if (!logoUrl && !logoFile) {
-            setError("Partner Logo is required.");
+            showNotif("Partner Logo is required.", "error");
             return;
         }
 
         if (existingHospitalImages.length === 0 && newHospitalImageFiles.length === 0) {
-            setError("At least one Hospital Image is required.");
+            showNotif("At least one Hospital Image is required.", "error");
             return;
         }
 
@@ -112,13 +133,17 @@ export default function ManagePartnersForm() {
                 googleMapsLink: googleMapsUrl.trim(),
             };
 
+            const msg = id
+                ? `Partner "${partnerName.trim()}" updated successfully!`
+                : `Partner "${partnerName.trim()}" added successfully!`;
+
             if (id) {
                 await editPartner(id, partnerData, logoFile, logoRemoved, newHospitalImageFiles, existingHospitalImages);
             } else {
                 await addPartner(partnerData, logoFile, newHospitalImageFiles);
             }
 
-            navigate("/cms/partners");
+            navigate("/cms/partners", { state: { successMessage: msg } });
         } catch (err: any) {
             setError(err.message || "Failed to save partner.");
         } finally {
@@ -128,8 +153,10 @@ export default function ManagePartnersForm() {
 
     if (currentUser && currentUser.role !== "super_admin" && currentUser.role !== "admin") {
         return (
-            <div className="w-full px-0 py-8 inline-flex justify-center items-start gap-6 overflow-hidden">
-                <Sidebar minimal />
+            <div className="w-full px-0 py-4 lg:py-8 flex flex-col lg:flex-row justify-center items-stretch lg:items-start gap-6 bg-background">
+                <div className="hidden lg:block shrink-0">
+                    <Sidebar minimal />
+                </div>
                 <div className="flex-1 p-8 bg-white rounded-[32px] flex flex-col items-center justify-center min-h-[400px] border border-gray-100 shadow-sm text-center">
                     <div className="p-4 bg-red-50 rounded-full text-red-500 mb-4">
                         <Icon name="Danger Circle" className="size-12 bg-current" />
@@ -145,8 +172,10 @@ export default function ManagePartnersForm() {
 
     if (loading) {
         return (
-            <div className="w-full px-0 py-8 inline-flex justify-center items-start gap-6 bg-background">
-                <Sidebar minimal />
+            <div className="w-full px-0 py-4 lg:py-8 flex flex-col lg:flex-row justify-center items-stretch lg:items-start gap-6 bg-background">
+                <div className="hidden lg:block shrink-0">
+                    <Sidebar minimal />
+                </div>
                 <div className="flex-1 p-8 bg-white rounded-[32px] flex flex-col items-center justify-center min-h-[400px] border border-gray-100 shadow-sm text-center">
                     <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                 </div>
@@ -155,9 +184,11 @@ export default function ManagePartnersForm() {
     }
 
     return (
-        <div className="w-full px-0 py-8 inline-flex justify-center items-start gap-6 bg-background">
+        <div className="w-full px-0 py-4 lg:py-8 flex flex-col lg:flex-row justify-center items-stretch lg:items-start gap-6 bg-background">
             {/* Left Sidebar */}
-            <Sidebar minimal />
+            <div className="hidden lg:block shrink-0">
+                <Sidebar minimal />
+            </div>
 
             {/* Main Content Card */}
             <div className="flex-1 p-6 bg-white rounded-[32px] inline-flex flex-col justify-start items-start gap-6 overflow-hidden shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border border-slate-100/50">
@@ -261,10 +292,21 @@ export default function ManagePartnersForm() {
                                     </span>
                                 }
                                 placeholder="Select country..."
-                                options={[{ value: "Indonesia", label: "Indonesia" }]}
+                                options={[
+                                    { value: "Indonesia", label: "Indonesia" },
+                                    { value: "Malaysia", label: "Malaysia" },
+                                    { value: "Singapore", label: "Singapore" },
+                                    { value: "Thailand", label: "Thailand" },
+                                    { value: "Japan", label: "Japan" },
+                                    { value: "South Korea", label: "South Korea" },
+                                    { value: "China", label: "China" },
+                                    { value: "Taiwan", label: "Taiwan" },
+                                    { value: "India", label: "India" }
+                                ]}
                                 value={country}
                                 onChange={(val) => setCountry(val)}
                                 multiple={false}
+                                allowCustomValues={true}
                                 containerClassName="max-w-none"
                             />
 
@@ -335,6 +377,9 @@ export default function ManagePartnersForm() {
                                 value={googleMapsUrl}
                                 onChange={(e) => setGoogleMapsUrl(e.target.value)}
                                 containerClassName="max-w-none"
+                                rightIcon="Map"
+                                rightIconClassName="bg-primary hover:bg-primary-hover"
+                                onRightIconClick={() => setShowMapsPreview(true)}
                             />
 
                             {/* Hospital Image */}
@@ -361,25 +406,38 @@ export default function ManagePartnersForm() {
                         <div className="self-stretch h-px bg-slate-100" />
 
                         {/* Action Buttons */}
-                        <div className="self-stretch flex justify-end gap-4 pt-2 w-full">
+                        <div className="self-stretch flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 pt-4 w-full">
                             <Button
                                 type="button"
                                 onClick={() => navigate("/cms/partners")}
                                 text="Cancel"
                                 variant="outline-primary"
-                                className="w-36"
+                                className="w-full sm:w-36"
                             />
                             <Button
                                 type="submit"
                                 disabled={submitting}
                                 text={submitting ? "Saving..." : "Save Partner"}
                                 variant="primary"
-                                className="w-40"
+                                className="w-full sm:w-40"
                             />
                         </div>
                     </form>
                 </div>
             </div>
+
+            <GooglaMapsPreviewModal
+                isOpen={showMapsPreview}
+                onClose={() => setShowMapsPreview(false)}
+                embedUrl={googleMapsUrl}
+            />
+
+            <Notification
+                isOpen={notification.isOpen}
+                message={notification.message}
+                type={notification.type}
+                onClose={() => setNotification((prev) => ({ ...prev, isOpen: false }))}
+            />
         </div>
     );
 }

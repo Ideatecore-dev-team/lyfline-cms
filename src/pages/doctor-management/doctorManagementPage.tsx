@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { type Doctor, getDoctors, deleteDoctor, getConsistingHospitals, getConsistingSpecialities } from "../../shared/api/doctor";
+import { useNavigate, useLocation } from "react-router-dom";
+import { type Doctor, getDoctors, deleteDoctor, getConsistingHospitals, getConsistingCountries } from "../../shared/api/doctor";
 import { authApi } from "../../shared/api/auth";
 import Sidebar from "../../widgets/Sidebar";
 import Button from "../../component/button";
 import DeleteConfirmationModal from "../../component/modal/deleteConfirmation";
 import InputBox from "../../component/inputbox";
 import Dropdown from "../../component/dropdown";
+import Notification from "../../component/notification";
+import Pagination from "../../component/pagination";
 
 const Icon = ({ name, className = "size-5 bg-current" }: { name: string; className?: string }) => (
     <span
@@ -21,29 +23,51 @@ const Icon = ({ name, className = "size-5 bg-current" }: { name: string; classNa
 
 function DoctorManagementPage() {
     const navigate = useNavigate();
+    const location = useLocation();
     const [doctors, setDoctors] = useState<Doctor[]>([]);
     const [hospitals, setHospitals] = useState<string[]>([]);
-    const [specialities, setSpecialities] = useState<string[]>([]);
+    const [countries, setCountries] = useState<string[]>([]);
     const [currentUser] = useState(() => authApi.getCurrentUser());
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    const [notification, setNotification] = useState<{
+        isOpen: boolean;
+        message: string;
+        type: "success" | "error" | "default";
+    }>({
+        isOpen: false,
+        message: "",
+        type: "default",
+    });
+
+    const showNotif = (message: string, type: "success" | "error" | "default" = "success") => {
+        setNotification({
+            isOpen: true,
+            message,
+            type,
+        });
+    };
 
     // Filter states
     const [filterName, setFilterName] = useState("");
     const [filterHospital, setFilterHospital] = useState("");
-    const [filterSpeciality, setFilterSpeciality] = useState("");
+    const [filterCountry, setFilterCountry] = useState("");
 
     // Form states
     const [doctorToDelete, setDoctorToDelete] = useState<Doctor | null>(null);
 
-    const fetchDoctors = async (nameFilter = filterName, hospitalFilter = filterHospital, specialityFilter = filterSpeciality) => {
+    const fetchDoctors = async (nameFilter = filterName, hospitalFilter = filterHospital, countryFilter = filterCountry) => {
         setLoading(true);
         try {
             const data = await getDoctors({
                 doctorName: nameFilter,
                 hospital: hospitalFilter,
-                speciality: specialityFilter,
+                country: countryFilter,
             });
             setDoctors(data);
+            setCurrentPage(1);
         } catch (err) {
             console.error("Error loading doctors", err);
         } finally {
@@ -53,12 +77,12 @@ function DoctorManagementPage() {
 
     const loadFilterOptions = async () => {
         try {
-            const [hospitalsList, specialitiesList] = await Promise.all([
+            const [hospitalsList, countriesList] = await Promise.all([
                 getConsistingHospitals(),
-                getConsistingSpecialities(),
+                getConsistingCountries(),
             ]);
             setHospitals(hospitalsList);
-            setSpecialities(specialitiesList);
+            setCountries(countriesList);
         } catch (err) {
             console.error("Error loading filters list", err);
         }
@@ -71,11 +95,19 @@ function DoctorManagementPage() {
     // Debounced automatic filtering
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
-            fetchDoctors(filterName, filterHospital, filterSpeciality);
+            fetchDoctors(filterName, filterHospital, filterCountry);
         }, 300);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [filterName, filterHospital, filterSpeciality]);
+    }, [filterName, filterHospital, filterCountry]);
+
+    useEffect(() => {
+        if (location.state?.successMessage) {
+            showNotif(location.state.successMessage, "success");
+            // Clear history state to prevent re-triggering on refresh
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state]);
 
     const handleDeleteClick = (doctor: Doctor) => {
         setDoctorToDelete(doctor);
@@ -85,11 +117,12 @@ function DoctorManagementPage() {
         if (!doctorToDelete) return;
         try {
             await deleteDoctor(doctorToDelete.id);
+            showNotif(`Doctor "${doctorToDelete.doctorName}" deleted successfully!`, "success");
             // Refresh list and dropdowns
             loadFilterOptions();
-            fetchDoctors(filterName, filterHospital, filterSpeciality);
+            fetchDoctors(filterName, filterHospital, filterCountry);
         } catch (err: any) {
-            alert("Failed to delete doctor: " + (err.message || err));
+            showNotif("Failed to delete doctor: " + (err.message || err), "error");
         }
     };
 
@@ -110,14 +143,16 @@ function DoctorManagementPage() {
     }
 
     return (
-        <div className="w-full px-0 py-8 inline-flex justify-center items-start gap-6 bg-background">
+        <div className="w-full px-0 py-4 lg:py-8 flex flex-col lg:flex-row justify-center items-stretch lg:items-start gap-6 bg-background">
             {/* Left Sidebar */}
-            <Sidebar minimal />
+            <div className="hidden lg:block shrink-0">
+                <Sidebar minimal />
+            </div>
 
             {/* Main Content Card */}
-            <div className="flex-1 p-6 bg-white rounded-[32px] inline-flex flex-col justify-start items-start gap-6 overflow-hidden shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border border-slate-100/50">
+            <div className="flex-1 h-[820px] p-6 bg-white rounded-[32px] flex flex-col justify-start items-stretch gap-6 overflow-hidden shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border border-slate-100/50">
                 {/* Header Block */}
-                <div className="self-stretch inline-flex justify-start items-start gap-6">
+                <div className="self-stretch flex flex-col sm:flex-row justify-between items-stretch sm:items-start gap-4 sm:gap-6">
                     <div className="flex-1 inline-flex flex-col justify-start items-start gap-2">
                         <div className="self-stretch justify-start text-primary text-3xl font-medium font-['Poppins']">
                             Manage Doctors
@@ -129,26 +164,29 @@ function DoctorManagementPage() {
                         </div>
                     </div>
                     {/* Add Doctor Button */}
-                    <Button
-                        onClick={() => {
-                            navigate("/cms/doctors/add");
-                        }}
-                        text="Add Doctor"
-                        leftIcon="Add"
-                    />
+                    <div className="shrink-0 w-full sm:w-auto">
+                        <Button
+                            onClick={() => {
+                                navigate("/cms/doctors/add");
+                            }}
+                            text="Add Doctor"
+                            leftIcon="Add"
+                            className="w-full sm:w-auto"
+                        />
+                    </div>
                 </div>
 
                 {/* Divider */}
                 <div className="self-stretch h-px bg-slate-100" />
 
                 {/* Filters */}
-                <div className="self-stretch flex flex-row items-end gap-4 w-full">
+                <div className="self-stretch flex flex-col md:flex-row md:items-end items-stretch gap-4 w-full">
                     <InputBox
                         label="Doctor Name"
                         placeholder="Search doctor name..."
                         value={filterName}
                         onChange={(e) => setFilterName(e.target.value)}
-                        containerClassName="max-w-xs"
+                        containerClassName="w-full max-w-none md:w-1/4 md:min-w-[240px]"
                     />
                     <Dropdown
                         label="Hospital"
@@ -160,142 +198,139 @@ function DoctorManagementPage() {
                         value={filterHospital}
                         onChange={(val) => setFilterHospital(val)}
                         multiple={false}
-                        containerClassName="max-w-xs"
+                        containerClassName="w-full max-w-none md:flex-1 md:min-w-[280px]"
                     />
                     <Dropdown
-                        label="Speciality"
-                        placeholder="All Specialities"
+                        label="Country"
+                        placeholder="All Countries"
                         options={[
-                            { value: "", label: "All Specialities" },
-                            ...specialities.map((s) => ({ value: s, label: s }))
+                            { value: "", label: "All Countries" },
+                            ...countries.map((c) => ({ value: c, label: c }))
                         ]}
-                        value={filterSpeciality}
-                        onChange={(val) => setFilterSpeciality(val)}
+                        value={filterCountry}
+                        onChange={(val) => setFilterCountry(val)}
                         multiple={false}
-                        containerClassName="max-w-xs"
+                        containerClassName="w-full max-w-none md:flex-1 md:min-w-[280px]"
                     />
                 </div>
 
                 {/* Table Container */}
-                <div className="self-stretch bg-white flex flex-col justify-start items-start gap-2 overflow-hidden">
-                    {/* Table Header */}
-                    <div className="self-stretch h-9 rounded-sm inline-flex justify-start items-start overflow-hidden">
-                        <div className="w-16 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start">
-                            <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden">
-                                <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
-                                    No.
+                <div className="w-full flex-1 bg-white flex flex-col justify-start items-stretch gap-0 overflow-hidden">
+                    <div className="w-full flex-1 overflow-x-auto">
+                        <div className="min-w-[800px] flex flex-col items-stretch gap-0">
+                            {/* Table Header */}
+                            <div className="w-full h-9 rounded-sm flex justify-start items-stretch overflow-hidden bg-indigo-50">
+                                <div className="w-16 flex flex-col justify-center items-start shrink-0">
+                                    <div className="w-full flex-1 px-3 py-4 flex justify-start items-center gap-2 overflow-hidden">
+                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
+                                            No.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex-1 flex flex-col justify-center items-start">
+                                    <div className="w-full flex-1 px-3 py-4 flex justify-start items-center gap-2 overflow-hidden">
+                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
+                                            Doctor Name
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="w-64 flex flex-col justify-center items-start shrink-0">
+                                    <div className="w-full flex-1 px-3 py-4 flex justify-start items-center gap-2 overflow-hidden">
+                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
+                                            Hospital
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="w-44 flex flex-col justify-center items-start shrink-0">
+                                    <div className="w-full flex-1 px-3 py-4 flex justify-start items-center gap-2 overflow-hidden">
+                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
+                                            Country
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="w-28 flex flex-col justify-center items-start shrink-0">
+                                    <div className="w-full flex-1 px-3 py-4 flex justify-start items-center gap-2 overflow-hidden">
+                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
+                                            Action
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div className="flex-1 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start">
-                            <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden">
-                                <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
-                                    Doctor Name
+
+                            {/* Table Body */}
+                            {loading && doctors.length === 0 ? (
+                                <div className="w-full p-12 text-center text-slate-400 font-sans">
+                                    Loading doctors...
                                 </div>
-                            </div>
-                        </div>
-                        <div className="w-64 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start">
-                            <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden">
-                                <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
-                                    Hospital
+                            ) : doctors.length === 0 ? (
+                                <div className="w-full p-12 text-center text-slate-400 font-sans">
+                                    No doctors found.
                                 </div>
-                            </div>
-                        </div>
-                        <div className="w-44 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start">
-                            <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden">
-                                <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
-                                    Country
-                                </div>
-                            </div>
-                        </div>
-                        <div className="w-56 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start">
-                            <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden">
-                                <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
-                                    Speciality
-                                </div>
-                            </div>
-                        </div>
-                        <div className="w-28 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start">
-                            <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden">
-                                <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
-                                    Action
-                                </div>
-                            </div>
+                            ) : (
+                                doctors.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((doctor, index) => (
+                                    <div
+                                        key={doctor.id}
+                                        className="w-full bg-white/0 flex justify-start items-stretch overflow-hidden border-b border-slate-100 hover:bg-slate-50/40 transition-colors"
+                                    >
+                                        <div className="w-16 flex flex-col justify-center items-start shrink-0">
+                                            <div className="w-full p-3 flex flex-col justify-center items-start overflow-hidden">
+                                                <div className="w-full justify-start text-black/90 text-sm font-normal font-['Poppins']">
+                                                    {(currentPage - 1) * itemsPerPage + index + 1}.
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 flex flex-col justify-center items-start">
+                                            <div className="w-full flex-1 p-3 flex flex-col justify-center items-start overflow-hidden">
+                                                <div className="w-full justify-start text-black/90 text-sm font-normal font-['Poppins']">
+                                                    {doctor.doctorName}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="w-64 flex flex-col justify-center items-start shrink-0">
+                                            <div className="w-full flex-1 p-3 flex flex-col justify-center items-start overflow-hidden">
+                                                <div className="w-full justify-start text-neutral-900 text-sm font-normal font-['Poppins']">
+                                                    {doctor.hospital}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="w-44 flex flex-col justify-center items-start shrink-0">
+                                            <div className="w-full flex-1 p-3 flex flex-col justify-center items-start overflow-hidden">
+                                                <div className="w-full justify-start text-neutral-900 text-sm font-normal font-['Poppins']">
+                                                    {doctor.country}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="w-28 px-3 flex justify-start items-center gap-4 py-2 shrink-0">
+                                            {/* Edit Button */}
+                                            <button
+                                                onClick={() => navigate(`/cms/doctors/edit/${doctor.id}`)}
+                                                className="size-9 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg outline -outline-offset-1 outline-slate-300 hover:outline-slate-500 flex justify-center items-center transition-all cursor-pointer active:scale-95"
+                                                title="Edit Doctor"
+                                            >
+                                                <Icon name="Pen" className="size-5 bg-current" />
+                                            </button>
+                                            {/* Delete Button */}
+                                            <button
+                                                onClick={() => handleDeleteClick(doctor)}
+                                                className="size-9 bg-red-600 hover:bg-red-700 text-white rounded-lg flex justify-center items-center transition-all cursor-pointer active:scale-95"
+                                                title="Delete Doctor"
+                                            >
+                                                <Icon name="Delete 2" className="size-5 bg-current" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
-
-                    {/* Table Body */}
-                    {loading && doctors.length === 0 ? (
-                        <div className="self-stretch p-12 text-center text-slate-400 font-sans">
-                            Loading doctors...
-                        </div>
-                    ) : doctors.length === 0 ? (
-                        <div className="self-stretch p-12 text-center text-slate-400 font-sans">
-                            No doctors found.
-                        </div>
-                    ) : (
-                        doctors.map((doctor, index) => (
-                            <div
-                                key={doctor.id}
-                                className="self-stretch bg-white/0 inline-flex justify-start items-center overflow-hidden border-b border-slate-100 hover:bg-slate-50/40 transition-colors"
-                            >
-                                <div className="w-16 self-stretch inline-flex flex-col justify-center items-start">
-                                    <div className="self-stretch p-3 flex flex-col justify-center items-start overflow-hidden">
-                                        <div className="self-stretch justify-start text-black/90 text-sm font-normal font-['Poppins']">
-                                            {index + 1}.
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex-1 self-stretch inline-flex flex-col justify-center items-start">
-                                    <div className="self-stretch flex-1 p-3 flex flex-col justify-center items-start overflow-hidden">
-                                        <div className="self-stretch justify-start text-black/90 text-sm font-normal font-['Poppins']">
-                                            {doctor.doctorName}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="w-64 self-stretch inline-flex flex-col justify-center items-start">
-                                    <div className="self-stretch flex-1 p-3 flex flex-col justify-center items-start overflow-hidden">
-                                        <div className="self-stretch justify-start text-neutral-900 text-sm font-normal font-['Poppins']">
-                                            {doctor.hospital}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="w-44 self-stretch inline-flex flex-col justify-center items-start">
-                                    <div className="self-stretch flex-1 p-3 flex flex-col justify-center items-start overflow-hidden">
-                                        <div className="self-stretch justify-start text-neutral-900 text-sm font-normal font-['Poppins']">
-                                            {doctor.country}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="w-56 self-stretch inline-flex flex-col justify-center items-start">
-                                    <div className="self-stretch flex-1 p-3 flex flex-col justify-center items-start overflow-hidden">
-                                        <div className="self-stretch justify-start text-neutral-900 text-sm font-normal font-['Poppins']">
-                                            {doctor.speciality}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="w-28 px-3 flex justify-start items-center gap-4 py-2">
-                                    {/* Edit Button */}
-                                    <button
-                                        onClick={() => navigate(`/cms/doctors/edit/${doctor.id}`)}
-                                        className="size-9 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg outline -outline-offset-1 outline-slate-300 hover:outline-slate-500 flex justify-center items-center transition-all cursor-pointer active:scale-95"
-                                        title="Edit Doctor"
-                                    >
-                                        <Icon name="Pen" className="size-5 bg-current" />
-                                    </button>
-                                    {/* Delete Button */}
-                                    <button
-                                        onClick={() => handleDeleteClick(doctor)}
-                                        className="size-9 bg-red-600 hover:bg-red-700 text-white rounded-lg flex justify-center items-center transition-all cursor-pointer active:scale-95"
-                                        title="Delete Doctor"
-                                    >
-                                        <Icon name="Delete 2" className="size-5 bg-current" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))
-                    )}
                 </div>
+
+                <Pagination
+                    currentPage={currentPage}
+                    totalItems={doctors.length}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={setCurrentPage}
+                />
             </div>
 
             {/* Delete Confirmation Modal */}
@@ -305,6 +340,13 @@ function DoctorManagementPage() {
                 onConfirm={handleConfirmDelete}
                 title="Remove Doctor"
                 message={doctorToDelete ? `Are you sure you want to remove doctor "${doctorToDelete.doctorName}"? This action cannot be undone.` : ""}
+            />
+
+            <Notification
+                isOpen={notification.isOpen}
+                message={notification.message}
+                type={notification.type}
+                onClose={() => setNotification((prev) => ({ ...prev, isOpen: false }))}
             />
         </div>
     );

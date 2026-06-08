@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import Sidebar from "../../widgets/Sidebar";
 import UploadFile from "../../component/uploadFile";
+import Notification from "../../component/notification";
+import DeleteConfirmationModal from "../../component/modal/deleteConfirmation";
 import { uploadPromoImage, deletePromoImage, getPromoImage } from "../../shared/api/promo/promo";
 
 export default function PromoManagementPage() {
@@ -8,6 +10,25 @@ export default function PromoManagementPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [submitting, setSubmitting] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+    const [notification, setNotification] = useState<{
+        isOpen: boolean;
+        message: string;
+        type: "success" | "error" | "default";
+    }>({
+        isOpen: false,
+        message: "",
+        type: "default",
+    });
+
+    const showNotif = (message: string, type: "success" | "error" | "default" = "success") => {
+        setNotification({
+            isOpen: true,
+            message,
+            type,
+        });
+    };
 
     const fetchActiveBanner = async () => {
         setLoading(true);
@@ -34,37 +55,46 @@ export default function PromoManagementPage() {
         try {
             const newUrl = await uploadPromoImage(files[0]);
             setCurrentBannerUrl(newUrl);
-            alert("Promo banner uploaded successfully!");
+            showNotif("Promo banner uploaded successfully!", "success");
             // Refresh to update active display
             await fetchActiveBanner();
         } catch (err: any) {
-            setError(err.message || "Failed to upload promo image.");
+            const errMsg = err.message || "Failed to upload promo image.";
+            setError(errMsg);
+            showNotif(errMsg, "error");
         } finally {
             setSubmitting(false);
         }
     };
 
-    const handleRemoveActive = async () => {
+    const handleRemoveActive = () => {
         if (!currentBannerUrl) return;
-        if (window.confirm("Are you sure you want to remove the current promo banner? This will clear it from storage.")) {
-            setSubmitting(true);
-            setError("");
-            try {
-                await deletePromoImage(currentBannerUrl);
-                setCurrentBannerUrl(null);
-                alert("Promo banner deleted successfully.");
-            } catch (err: any) {
-                setError("Failed to delete promo banner: " + err.message);
-            } finally {
-                setSubmitting(false);
-            }
+        setShowDeleteModal(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!currentBannerUrl) return;
+        setSubmitting(true);
+        setError("");
+        try {
+            await deletePromoImage(currentBannerUrl);
+            setCurrentBannerUrl(null);
+            showNotif("Promo banner deleted successfully.", "success");
+        } catch (err: any) {
+            const errMsg = "Failed to delete promo banner: " + err.message;
+            setError(errMsg);
+            showNotif(errMsg, "error");
+        } finally {
+            setSubmitting(false);
         }
     };
 
     return (
-        <div className="w-full px-0 py-8 inline-flex justify-center items-start gap-6 bg-background">
+        <div className="w-full px-0 py-4 lg:py-8 flex flex-col lg:flex-row justify-center items-stretch lg:items-start gap-6 bg-background">
             {/* Left Sidebar */}
-            <Sidebar minimal />
+            <div className="hidden lg:block shrink-0">
+                <Sidebar minimal />
+            </div>
 
             {/* Main Content Card */}
             <div className="flex-1 p-6 bg-white rounded-[32px] inline-flex flex-col justify-start items-start gap-6 overflow-hidden shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border border-slate-100/50">
@@ -99,6 +129,16 @@ export default function PromoManagementPage() {
                     </div>
                 ) : (
                     <div className="self-stretch">
+                        {submitting && (
+                            <div className="mb-4">
+                                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden relative">
+                                    <div className="absolute top-0 left-0 h-full w-full bg-primary rounded-full animate-loading-progress" />
+                                </div>
+                                <div className="text-xs text-primary mt-2 font-sans font-medium animate-pulse text-center">
+                                    Processing storage file...
+                                </div>
+                            </div>
+                        )}
                         <UploadFile
                             label={
                                 <span>
@@ -116,14 +156,24 @@ export default function PromoManagementPage() {
                                 }
                             }}
                         />
-                        {submitting && (
-                            <div className="text-xs text-[#3F71B7] mt-2 font-sans font-medium animate-pulse">
-                                Processing storage file...
-                            </div>
-                        )}
                     </div>
                 )}
             </div>
+
+            <DeleteConfirmationModal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={handleConfirmDelete}
+                title="Remove Promo Banner"
+                message="Are you sure you want to remove the current promo banner? This action will permanently clear it from storage."
+            />
+
+            <Notification
+                isOpen={notification.isOpen}
+                message={notification.message}
+                type={notification.type}
+                onClose={() => setNotification((prev) => ({ ...prev, isOpen: false }))}
+            />
         </div>
     );
 }

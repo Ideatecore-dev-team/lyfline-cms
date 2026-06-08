@@ -1,15 +1,26 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import Button from "../../component/button";
 import InputBox from "../../component/inputbox";
+import Notification from "../../component/notification";
 import { authApi } from "../../shared/api/auth";
 
 function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    if (location.state?.successMessage) {
+      setSuccess(location.state.successMessage);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,9 +38,15 @@ function LoginPage() {
 
     setLoading(true);
     try {
-      await authApi.login(email, password);
-      // Navigate directly to user-management page upon successful login
-      navigate("/cms/users");
+      const response = await authApi.login(email, password);
+      setSuccess("Successfully logged in!");
+      setTimeout(() => {
+        if (response.user.role === "super_admin") {
+          navigate("/cms/users");
+        } else {
+          navigate("/cms/promo");
+        }
+      }, 1200);
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
       setError(errMsg || "Invalid email or password.");
@@ -66,20 +83,18 @@ function LoginPage() {
           </div>
         </div>
 
-        {/* Error Alert */}
-        {error && (
-          <div className="p-3 bg-red-50 border border-red-200 text-[#E02828] text-xs rounded-xl flex items-center justify-center gap-2 font-medium animate-fade-in">
-            <span
-              style={{
-                maskImage: 'url("/icons/Danger Circle.svg")',
-                WebkitMaskImage: 'url("/icons/Danger Circle.svg")',
-              }}
-              className="text-[#E02828] size-4 bg-current mask-contain mask-no-repeat mask-center shrink-0"
-              aria-hidden="true"
-            />
-            <span>{error}</span>
-          </div>
-        )}
+        <Notification
+          isOpen={!!error}
+          message={error}
+          type="error"
+          onClose={() => setError("")}
+        />
+        <Notification
+          isOpen={!!success}
+          message={success}
+          type="success"
+          onClose={() => setSuccess("")}
+        />
 
         {/* Input Fields */}
         <div className="flex flex-col gap-4">
@@ -97,11 +112,13 @@ function LoginPage() {
           <InputBox
             label="Password"
             placeholder="Input your password"
-            type="password"
+            type={showPassword ? "text" : "password"}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
             required
+            rightIcon={showPassword ? "Hide" : "Show"}
+            onRightIconClick={() => setShowPassword(!showPassword)}
             containerClassName="max-w-none"
           />
         </div>

@@ -5,9 +5,10 @@ import Sidebar from "../../widgets/Sidebar";
 const CmsLayout = () => {
   const location = useLocation();
   const hasInternalSidebar =
-    ["/cms/users", "/cms/promo", "/cms/partners", "/cms/doctors"].includes(location.pathname) ||
+    ["/cms/users", "/cms/promo", "/cms/partners", "/cms/doctors", "/cms/article"].includes(location.pathname) ||
     location.pathname.startsWith("/cms/partners/") ||
-    location.pathname.startsWith("/cms/doctors/");
+    location.pathname.startsWith("/cms/doctors/") ||
+    location.pathname.startsWith("/cms/article/");
 
   return (
     <div className="flex flex-col min-h-screen">

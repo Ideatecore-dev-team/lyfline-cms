@@ -39,13 +39,13 @@ export default function DeleteConfirmationModal({
     };
 
     return (
-        <div 
+        <div
             onClick={onClose}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in"
         >
             <div
                 onClick={(e) => e.stopPropagation()}
-                className="w-[500px] p-6 bg-white rounded-[32px] outline -outline-offset-1 outline-slate-200 inline-flex flex-col justify-start items-start gap-6 shadow-2xl animate-scale-in"
+                className="w-full max-w-[500px] p-6 bg-white rounded-[32px] outline -outline-offset-1 outline-slate-200 inline-flex flex-col justify-start items-start gap-6 shadow-2xl animate-scale-in"
             >
                 {/* Title Bar */}
                 <div className="self-stretch inline-flex justify-between items-start">
@@ -53,7 +53,7 @@ export default function DeleteConfirmationModal({
                         <div className="self-stretch justify-start text-[#9EB7DA] text-sm font-normal font-sans tracking-wider uppercase">
                             DELETE CONFIRMATION
                         </div>
-                        <div className="self-stretch justify-start text-black text-2xl font-medium font-sans">
+                        <div className="self-stretch justify-start text-black text-xl font-medium font-sans">
                             {title}
                         </div>
                     </div>
@@ -89,19 +89,19 @@ export default function DeleteConfirmationModal({
                 <div className="self-stretch inline-flex justify-end items-center gap-3">
                     <Button
                         type="button"
-                        onClick={handleConfirm}
-                        disabled={submitting}
-                        text={submitting ? "Confirming..." : "Yes"}
-                        variant="ghost-black"
-                        className="px-6 py-2.5 h-11 text-sm rounded-full cursor-pointer active:scale-95"
-                    />
-                    <Button
-                        type="button"
                         onClick={onClose}
                         disabled={submitting}
                         text="No"
                         variant="primary"
-                        className="px-6 py-2.5 h-11 text-sm rounded-full cursor-pointer active:scale-95"
+                        className="w-full px-6 py-2.5 h-11 text-sm rounded-full cursor-pointer active:scale-95"
+                    />
+                    <Button
+                        type="button"
+                        onClick={handleConfirm}
+                        disabled={submitting}
+                        text={submitting ? "Confirming..." : "Yes, Continue"}
+                        variant="outline-primary"
+                        className="w-full px-6 py-2.5 h-11 text-sm rounded-full cursor-pointer active:scale-95"
                     />
                 </div>
             </div>

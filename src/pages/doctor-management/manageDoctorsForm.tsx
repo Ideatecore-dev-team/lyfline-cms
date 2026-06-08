@@ -6,7 +6,9 @@ import Button from "../../component/button";
 import InputBox from "../../component/inputbox";
 import UploadFile from "../../component/uploadFile";
 import Dropdown from "../../component/dropdown";
+import Notification from "../../component/notification";
 import { getPartners, type Partner } from "../../shared/api/partner";
+import { addDoctor, editDoctor, getDoctorById } from "../../shared/api/doctor";
 
 const Icon = ({ name, className = "size-5 bg-current" }: { name: string; className?: string }) => (
     <span
@@ -26,17 +28,38 @@ export default function ManageDoctorsForm() {
 
     const [doctorName, setDoctorName] = useState("");
     const [doctorTitle, setDoctorTitle] = useState("");
-    const [hospital, setHospital] = useState("");
+    const [hospitalId, setHospitalId] = useState("");
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imageRemoved, setImageRemoved] = useState(false);
-    
+
     // Partnerships for dropdown lookup
     const [partners, setPartners] = useState<Partner[]>([]);
-    
+
+    const [specialities, setSpecialities] = useState<string[]>([]);
+    const [qualifications, setQualifications] = useState<string[]>([]);
+    const [languages, setLanguages] = useState<string[]>([]);
+
     const [submitting, setSubmitting] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+
+    const [notification, setNotification] = useState<{
+        isOpen: boolean;
+        message: string;
+        type: "success" | "error" | "default";
+    }>({
+        isOpen: false,
+        message: "",
+        type: "default",
+    });
+
+    const showNotif = (message: string, type: "success" | "error" | "default" = "success") => {
+        setNotification({
+            isOpen: true,
+            message,
+            type,
+        });
+    };
 
     // Load dynamic hospitals list from partners table
     useEffect(() => {
@@ -51,27 +74,27 @@ export default function ManageDoctorsForm() {
         loadInitialData();
     }, []);
 
-    // Load existing doctor info if in edit mode (UI first placeholder)
+    // Load existing doctor info if in edit mode
     useEffect(() => {
         if (!id) return;
 
         const loadDoctor = async () => {
             setLoading(true);
             try {
-                // UI first placeholder: we look up doctor from localStorage list
-                const data = localStorage.getItem("lyfline_doctors");
-                const doctorsList = data ? JSON.parse(data) : [];
-                const doctor = doctorsList.find((d: any) => d.id === id);
+                const doctor = await getDoctorById(id);
                 if (doctor) {
                     setDoctorName(doctor.doctorName);
-                    setDoctorTitle(doctor.speciality); // Map speciality to doctor title in this UI
-                    setHospital(doctor.hospital);
+                    setDoctorTitle(doctor.speciality); // Map speciality in the model to doctorTitle
+                    setHospitalId(doctor.hospitalId || "");
                     setImageUrl(doctor.imageUrl || null);
+                    setSpecialities(doctor.specialities || []);
+                    setQualifications(doctor.qualifications || []);
+                    setLanguages(doctor.languages || []);
                 } else {
-                    setError("Doctor not found.");
+                    showNotif("Doctor not found.", "error");
                 }
             } catch (err: any) {
-                setError(err.message || "Failed to load doctor details.");
+                showNotif(err.message || "Failed to load doctor details.", "error");
             } finally {
                 setLoading(false);
             }
@@ -82,32 +105,53 @@ export default function ManageDoctorsForm() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError("");
 
-        if (!doctorName.trim() || !doctorTitle.trim() || !hospital) {
-            setError("Please fill out all required fields.");
+        if (!doctorName.trim() || !doctorTitle.trim() || !hospitalId) {
+            showNotif("Please fill out all required fields.", "error");
             return;
         }
 
         if (!imageUrl && !imageFile) {
-            setError("Doctor Image is required.");
+            showNotif("Doctor Image is required.", "error");
             return;
         }
 
         setSubmitting(true);
         try {
-            console.log("Submitting Doctor UI:", {
+            console.log("Submitting Doctor to Supabase:", {
                 doctorName,
                 doctorTitle,
-                hospital,
+                hospitalId,
                 imageUrl,
                 imageFile,
                 imageRemoved,
+                specialities,
+                qualifications,
+                languages,
             });
-            // Logic can be filled in here when database integration is requested
-            navigate("/cms/doctors");
+
+            const doctorData = {
+                doctorName,
+                doctorTitle,
+                hospitalId,
+                specialities,
+                qualifications,
+                languages,
+            };
+
+            const msg = id
+                ? `Doctor "${doctorName.trim()}" updated successfully!`
+                : `Doctor "${doctorName.trim()}" added successfully!`;
+
+            if (id) {
+                await editDoctor(id, doctorData, imageFile, imageRemoved);
+            } else {
+                await addDoctor(doctorData, imageFile);
+            }
+
+            navigate("/cms/doctors", { state: { successMessage: msg } });
         } catch (err: any) {
-            setError(err.message || "Failed to save doctor.");
+            showNotif(err.message || "Failed to save doctor.", "error");
         } finally {
             setSubmitting(false);
         }
@@ -115,8 +159,10 @@ export default function ManageDoctorsForm() {
 
     if (currentUser && currentUser.role !== "super_admin" && currentUser.role !== "admin") {
         return (
-            <div className="w-full px-0 py-8 inline-flex justify-center items-start gap-6 overflow-hidden">
-                <Sidebar minimal />
+            <div className="w-full px-0 py-4 lg:py-8 flex flex-col lg:flex-row justify-center items-stretch lg:items-start gap-6 bg-background">
+                <div className="hidden lg:block shrink-0">
+                    <Sidebar minimal />
+                </div>
                 <div className="flex-1 p-8 bg-white rounded-[32px] flex flex-col items-center justify-center min-h-[400px] border border-gray-100 shadow-sm text-center">
                     <div className="p-4 bg-red-50 rounded-full text-red-500 mb-4">
                         <Icon name="Danger Circle" className="size-12 bg-current" />
@@ -132,8 +178,10 @@ export default function ManageDoctorsForm() {
 
     if (loading) {
         return (
-            <div className="w-full px-0 py-8 inline-flex justify-center items-start gap-6 bg-background">
-                <Sidebar minimal />
+            <div className="w-full px-0 py-4 lg:py-8 flex flex-col lg:flex-row justify-center items-stretch lg:items-start gap-6 bg-background">
+                <div className="hidden lg:block shrink-0">
+                    <Sidebar minimal />
+                </div>
                 <div className="flex-1 p-8 bg-white rounded-[32px] flex flex-col items-center justify-center min-h-[400px] border border-gray-100 shadow-sm text-center">
                     <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                 </div>
@@ -142,9 +190,11 @@ export default function ManageDoctorsForm() {
     }
 
     return (
-        <div className="w-full px-0 py-8 inline-flex justify-center items-start gap-6 bg-background">
+        <div className="w-full px-0 py-4 lg:py-8 flex flex-col lg:flex-row justify-center items-stretch lg:items-start gap-6 bg-background">
             {/* Left Sidebar */}
-            <Sidebar minimal />
+            <div className="hidden lg:block shrink-0">
+                <Sidebar minimal />
+            </div>
 
             {/* Main Content Card */}
             <div className="flex-1 p-6 bg-white rounded-[32px] inline-flex flex-col justify-start items-start gap-6 overflow-hidden shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border border-slate-100/50">
@@ -171,12 +221,7 @@ export default function ManageDoctorsForm() {
                 {/* Divider */}
                 <div className="self-stretch h-px bg-slate-100" />
 
-                {error && (
-                    <div className="self-stretch p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm font-medium flex items-center gap-2">
-                        <Icon name="Danger Circle" className="size-5 bg-current" />
-                        <span>{error}</span>
-                    </div>
-                )}
+
 
                 {/* Content Area - Full Width */}
                 <div className="self-stretch">
@@ -190,7 +235,7 @@ export default function ManageDoctorsForm() {
                                     </span>
                                 }
                                 descriptionPrefix="Preferable Size"
-                                descriptionValue="(150px * 150px)"
+                                descriptionValue="(270px * 148px)"
                                 multiple={false}
                                 defaultImageUrl={imageUrl || undefined}
                                 defaultImageLabel="Current Doctor Image"
@@ -249,11 +294,11 @@ export default function ManageDoctorsForm() {
                                 }
                                 placeholder="Select hospital..."
                                 options={partners.map((p) => ({
-                                    value: p.hospitalName,
+                                    value: p.id,
                                     label: p.hospitalName,
                                 }))}
-                                value={hospital}
-                                onChange={(val) => setHospital(val)}
+                                value={hospitalId}
+                                onChange={(val) => setHospitalId(val)}
                                 multiple={false}
                                 containerClassName="max-w-none"
                             />
@@ -261,26 +306,204 @@ export default function ManageDoctorsForm() {
 
                         <div className="self-stretch h-px bg-slate-100" />
 
+                        <div className="self-stretch justify-start text-black text-2xl font-medium font-sans">
+                            Doctor Details
+                        </div>
+
+                        {/* Speciality */}
+                        <div className="flex flex-col gap-3 w-full">
+                            <div className="self-stretch px-2.5 py-2.5 bg-primary/10 rounded-xl flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-6">
+                                <div className="w-full sm:w-[486px] flex justify-start items-center gap-3">
+                                    <Icon name="Nurse" className="size-5 bg-primary" />
+                                    <div className="justify-start">
+                                        <span className="text-primary text-base font-medium font-sans">Speciality</span>
+                                        <span className="text-[#9EB7DA] text-base font-medium font-sans"> (Can be multiple)</span>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setSpecialities([...specialities, ""])}
+                                    className="h-9 w-full sm:w-9 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg outline-1 -outline-offset-1 outline-slate-500 flex justify-center items-center transition-all cursor-pointer active:scale-95 shrink-0"
+                                    title="Add Speciality"
+                                >
+                                    <Icon name="Add" className="size-5 bg-slate-500" />
+                                </button>
+                            </div>
+                            
+                            {specialities.length === 0 ? (
+                                <div className="self-stretch text-slate-400 text-sm font-normal font-sans pl-8 py-2">
+                                    To add Speciality click on <span className="text-primary font-medium">Plus</span> Icon Button
+                                </div>
+                            ) : (
+                                specialities.map((spec, index) => (
+                                    <div key={index} className="self-stretch flex flex-row items-end gap-4 w-full pl-8 animate-in fade-in-50 duration-200">
+                                        <InputBox
+                                            label={`Speciality ${index + 1}`}
+                                            placeholder="Enter speciality..."
+                                            value={spec}
+                                            onChange={(e) => {
+                                                const updated = [...specialities];
+                                                updated[index] = e.target.value;
+                                                setSpecialities(updated);
+                                            }}
+                                            containerClassName="flex-1 max-w-none"
+                                        />
+                                        <div className="h-12 flex items-center shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setSpecialities(specialities.filter((_, i) => i !== index));
+                                                }}
+                                                className="size-9 bg-red-600 hover:bg-red-700 text-white rounded-lg flex justify-center items-center transition-all cursor-pointer active:scale-95"
+                                                title="Delete Speciality"
+                                            >
+                                                <Icon name="Delete 2" className="size-5 bg-current" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {/* Qualification */}
+                        <div className="flex flex-col gap-3 w-full">
+                            <div className="self-stretch px-2.5 py-2.5 bg-primary/10 rounded-xl flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-6">
+                                <div className="w-full sm:w-[486px] flex justify-start items-center gap-3">
+                                    <Icon name="Document Align Left 5" className="size-5 bg-primary" />
+                                    <div className="justify-start">
+                                        <span className="text-primary text-base font-medium font-sans">Qualification</span>
+                                        <span className="text-[#9EB7DA] text-base font-medium font-sans"> (Can be multiple)</span>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setQualifications([...qualifications, ""])}
+                                    className="h-9 w-full sm:w-9 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg outline-1 -outline-offset-1 outline-slate-500 flex justify-center items-center transition-all cursor-pointer active:scale-95 shrink-0"
+                                    title="Add Qualification"
+                                >
+                                    <Icon name="Add" className="size-5 bg-slate-500" />
+                                </button>
+                            </div>
+
+                            {qualifications.length === 0 ? (
+                                <div className="self-stretch text-slate-400 text-sm font-normal font-sans pl-8 py-2">
+                                    To add Qualification click on <span className="text-primary font-medium">Plus</span> Icon Button
+                                </div>
+                            ) : (
+                                qualifications.map((qual, index) => (
+                                    <div key={index} className="self-stretch flex flex-row items-end gap-4 w-full pl-8 animate-in fade-in-50 duration-200">
+                                        <InputBox
+                                            label={`Qualification ${index + 1}`}
+                                            placeholder="Enter qualification..."
+                                            value={qual}
+                                            onChange={(e) => {
+                                                const updated = [...qualifications];
+                                                updated[index] = e.target.value;
+                                                setQualifications(updated);
+                                            }}
+                                            containerClassName="flex-1 max-w-none"
+                                        />
+                                        <div className="h-12 flex items-center shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setQualifications(qualifications.filter((_, i) => i !== index));
+                                                }}
+                                                className="size-9 bg-red-600 hover:bg-red-700 text-white rounded-lg flex justify-center items-center transition-all cursor-pointer active:scale-95"
+                                                title="Delete Qualification"
+                                            >
+                                                <Icon name="Delete 2" className="size-5 bg-current" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {/* Languages */}
+                        <div className="flex flex-col gap-3 w-full">
+                            <div className="self-stretch px-2.5 py-2.5 bg-primary/10 rounded-xl flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-6">
+                                <div className="w-full sm:w-[486px] flex justify-start items-center gap-3">
+                                    <Icon name="Message 18" className="size-5 bg-primary" />
+                                    <div className="justify-start">
+                                        <span className="text-primary text-base font-medium font-sans">Languages</span>
+                                        <span className="text-[#9EB7DA] text-base font-medium font-sans"> (Can be multiple)</span>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setLanguages([...languages, ""])}
+                                    className="h-9 w-full sm:w-9 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg outline-1 -outline-offset-1 outline-slate-500 flex justify-center items-center transition-all cursor-pointer active:scale-95 shrink-0"
+                                    title="Add Languages"
+                                >
+                                    <Icon name="Add" className="size-5 bg-slate-500" />
+                                </button>
+                            </div>
+
+                            {languages.length === 0 ? (
+                                <div className="self-stretch text-slate-400 text-sm font-normal font-sans pl-8 py-2">
+                                    To add Language click on <span className="text-primary font-medium">Plus</span> Icon Button
+                                </div>
+                            ) : (
+                                languages.map((lang, index) => (
+                                    <div key={index} className="self-stretch flex flex-row items-end gap-4 w-full pl-8 animate-in fade-in-50 duration-200">
+                                        <InputBox
+                                            label={`Language ${index + 1}`}
+                                            placeholder="Enter language..."
+                                            value={lang}
+                                            onChange={(e) => {
+                                                const updated = [...languages];
+                                                updated[index] = e.target.value;
+                                                setLanguages(updated);
+                                            }}
+                                            containerClassName="flex-1 max-w-none"
+                                        />
+                                        <div className="h-12 flex items-center shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setLanguages(languages.filter((_, i) => i !== index));
+                                                }}
+                                                className="size-9 bg-red-600 hover:bg-red-700 text-white rounded-lg flex justify-center items-center transition-all cursor-pointer active:scale-95"
+                                                title="Delete Language"
+                                            >
+                                                <Icon name="Delete 2" className="size-5 bg-current" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        <div className="self-stretch h-px bg-slate-100" />
+
                         {/* Action Buttons */}
-                        <div className="self-stretch flex justify-end gap-4 pt-2 w-full">
+                        <div className="self-stretch flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 pt-4 w-full">
                             <Button
                                 type="button"
                                 onClick={() => navigate("/cms/doctors")}
                                 text="Cancel"
                                 variant="outline-primary"
-                                className="w-36"
+                                className="w-full sm:w-36"
                             />
                             <Button
                                 type="submit"
                                 disabled={submitting}
                                 text={submitting ? "Saving..." : "Save Doctor"}
                                 variant="primary"
-                                className="w-40"
+                                className="w-full sm:w-40"
                             />
                         </div>
                     </form>
                 </div>
             </div>
+
+            <Notification
+                isOpen={notification.isOpen}
+                message={notification.message}
+                type={notification.type}
+                onClose={() => setNotification((prev) => ({ ...prev, isOpen: false }))}
+            />
         </div>
     );
 }

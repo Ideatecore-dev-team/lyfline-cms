@@ -19,6 +19,7 @@ const LoadingSpinner = () => (
 const LoginPage = lazy(() => import("../pages/login/LoginPage"));
 const DashboardPage = lazy(() => import("../pages/dashboard/DashboardPage"));
 const ArticleManagementPage = lazy(() => import("../pages/article-management/ArticleManagementPage"));
+const ManageArticleForm = lazy(() => import("../pages/article-management/manageArticleForm"));
 const UserManagementPage = lazy(() => import("../pages/user-management/UserManagementPage"));
 const PromoManagementPage = lazy(() => import("../pages/promo-management/promoManagementPage"));
 const PartnersManagementPage = lazy(() => import("../pages/partners-management/partnersManagementPage"));
@@ -44,6 +45,8 @@ export default function App() {
             <Route element={<CmsLayout />}>
               <Route path="/cms/dashboard" element={<DashboardPage />} />
               <Route path="/cms/article" element={<ArticleManagementPage />} />
+              <Route path="/cms/article/add" element={<ManageArticleForm />} />
+              <Route path="/cms/article/edit/:id" element={<ManageArticleForm />} />
               <Route path="/cms/users" element={<UserManagementPage />} />
               <Route path="/cms/promo" element={<PromoManagementPage />} />
               <Route path="/cms/partners" element={<PartnersManagementPage />} />

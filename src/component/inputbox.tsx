@@ -6,6 +6,7 @@ interface InputBoxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "pla
   rightIcon?: string;
   onRightIconClick?: () => void;
   containerClassName?: string;
+  rightIconClassName?: string;
 }
 
 export default function InputBox({
@@ -16,6 +17,7 @@ export default function InputBox({
   className = "",
   containerClassName = "",
   type = "text",
+  rightIconClassName = "",
   ...props
 }: InputBoxProps) {
   // Helper to format the icon filename
@@ -43,7 +45,9 @@ export default function InputBox({
             type="button"
             onClick={onRightIconClick}
             disabled={!onRightIconClick}
-            className={`size-6 bg-slate-500 hover:bg-slate-700 mask-contain mask-no-repeat mask-center shrink-0 transition-colors ${
+            className={`size-6 mask-contain mask-no-repeat mask-center shrink-0 transition-colors ${
+              rightIconClassName || "bg-slate-500 hover:bg-slate-700"
+            } ${
               onRightIconClick ? "cursor-pointer" : "pointer-events-none"
             }`}
             style={{

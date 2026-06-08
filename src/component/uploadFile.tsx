@@ -1,5 +1,6 @@
 import { useState, useRef, type DragEvent, type ChangeEvent, type ReactNode } from "react";
 import Button from "./button";
+import Notification from "./notification";
 
 interface UploadFileProps {
     label: ReactNode;
@@ -37,6 +38,24 @@ export default function UploadFile({
     const [previews, setPreviews] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const [notification, setNotification] = useState<{
+        isOpen: boolean;
+        message: string;
+        type: "success" | "error" | "default";
+    }>({
+        isOpen: false,
+        message: "",
+        type: "default",
+    });
+
+    const showNotif = (message: string, type: "success" | "error" | "default" = "success") => {
+        setNotification({
+            isOpen: true,
+            message,
+            type,
+        });
+    };
+
     const handleFiles = (files: FileList | null) => {
         if (!files) return;
 
@@ -46,7 +65,7 @@ export default function UploadFile({
         // Enforce max files limit
         const totalExisting = existingImageUrls.length;
         if (maxFiles && (updatedFiles.length + totalExisting) > maxFiles) {
-            alert(`You can only upload a maximum of ${maxFiles} files (including already saved files).`);
+            showNotif(`You can only upload a maximum of ${maxFiles} files (including already saved files).`, "error");
             updatedFiles = updatedFiles.slice(0, maxFiles - totalExisting);
         }
 
@@ -157,7 +176,7 @@ export default function UploadFile({
                         onDragLeave={handleDrag}
                         onDrop={handleDrop}
                         onClick={triggerBrowse}
-                        className={`self-stretch py-14 rounded-[32px] outline outline-1 outline-offset-[-1px] transition-all cursor-pointer flex flex-col justify-start items-center gap-2.5 overflow-hidden ${dragActive
+                        className={`self-stretch py-14 rounded-[32px] outline-1 -outline-offset-1 transition-all cursor-pointer flex flex-col justify-start items-center gap-2.5 overflow-hidden ${dragActive
                             ? "outline-primary bg-indigo-50/30 scale-[0.99] outline-dashed"
                             : "outline-[#9EB7DA] hover:bg-slate-100/70"
                             }`}
@@ -184,7 +203,7 @@ export default function UploadFile({
                                 <div className="text-center justify-start text-black text-sm font-medium font-['Poppins']">
                                     or
                                 </div>
-                                <div className="text-center justify-start text-primary hover:text-[#3365AC] text-sm font-semibold font-['Poppins'] transition-all">
+                                <div className="text-center justify-start text-primary hover:text-primary-hover text-sm font-semibold font-['Poppins'] transition-all">
                                     Browse
                                 </div>
                             </div>
@@ -196,7 +215,10 @@ export default function UploadFile({
                 {(selectedFiles.length > 0 || defaultImageUrl || existingImageUrls.length > 0) && (
                     <div className="self-stretch flex flex-col gap-2 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
                         <div className="text-xs font-semibold text-[#9EB7DA] uppercase tracking-wider mb-1 font-sans">
-                            Selected Files ({selectedFiles.length + existingImageUrls.length + (defaultImageUrl ? 1 : 0)})
+                            Selected Files ({multiple 
+                                ? (selectedFiles.length + existingImageUrls.length + (defaultImageUrl ? 1 : 0))
+                                : (selectedFiles.length > 0 ? selectedFiles.length : (defaultImageUrl ? 1 : 0))
+                            })
                         </div>
 
                         {/* Render existing database images */}
@@ -215,7 +237,7 @@ export default function UploadFile({
                                         <div className="text-sm font-medium text-slate-800 truncate max-w-[400px] font-sans">
                                             Saved Hospital Image
                                         </div>
-                                        <div className="text-xs text-[#3F71B7] font-sans truncate max-w-[400px]">
+                                        <div className="text-xs text-primary font-sans truncate max-w-[400px]">
                                             {getFileNameFromUrl(url)}
                                         </div>
                                     </div>
@@ -272,7 +294,7 @@ export default function UploadFile({
                                         <div className="text-sm font-medium text-slate-800 truncate max-w-[400px] font-sans">
                                             {file.name}
                                         </div>
-                                        <div className="text-xs text-[#3F71B7] font-sans">
+                                        <div className="text-xs text-primary font-sans">
                                             {formatBytes(file.size)}
                                         </div>
                                     </div>
@@ -311,7 +333,7 @@ export default function UploadFile({
                                         <div className="text-sm font-medium text-slate-800 truncate max-w-[400px] font-sans">
                                             {defaultImageLabel}
                                         </div>
-                                        <div className="text-xs text-[#3F71B7] font-sans truncate max-w-[400px]">
+                                        <div className="text-xs text-primary font-sans truncate max-w-[400px]">
                                             {getFileNameFromUrl(defaultImageUrl)}
                                         </div>
                                     </div>
@@ -357,12 +379,18 @@ export default function UploadFile({
                         <span className="text-black text-sm font-medium font-['Poppins']">
                             {descriptionPrefix}{" "}
                         </span>
-                        <span className="text-[#3F71B7] text-sm font-medium font-['Poppins']">
+                        <span className="text-primary text-sm font-medium font-['Poppins']">
                             {descriptionValue}
                         </span>
                     </div>
                 )}
             </div>
+            <Notification
+                isOpen={notification.isOpen}
+                message={notification.message}
+                type={notification.type}
+                onClose={() => setNotification((prev) => ({ ...prev, isOpen: false }))}
+            />
         </div>
     );
 }

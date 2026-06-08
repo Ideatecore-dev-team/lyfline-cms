@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 export interface DropdownOption {
   value: string;
-  label: string;
+  label: ReactNode;
+  searchLabel?: string;
 }
 
 interface DropdownProps {
@@ -14,6 +15,8 @@ interface DropdownProps {
   multiple?: boolean;
   containerClassName?: string;
   disabled?: boolean;
+  selectClassName?: string;
+  allowCustomValues?: boolean;
 }
 
 const Icon = ({ name, className = "size-5 bg-current" }: { name: string; className?: string }) => (
@@ -36,6 +39,8 @@ export default function Dropdown({
   multiple = false,
   containerClassName = "",
   disabled = false,
+  selectClassName = "bg-indigo-50",
+  allowCustomValues = false,
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -56,9 +61,10 @@ export default function Dropdown({
   }, []);
 
   // Filter options based on search query
-  const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredOptions = options.filter((option) => {
+    const labelStr = typeof option.label === "string" ? option.label : option.searchLabel || "";
+    return labelStr.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   // Helper to check if an option is selected
   const isSelected = (val: string) => {
@@ -95,13 +101,26 @@ export default function Dropdown({
   // Get display text/elements for input field
   const getSelectedLabels = () => {
     if (multiple && Array.isArray(value)) {
-      return options.filter((opt) => value.includes(opt.value));
+      return value.map((val) => {
+        const found = options.find((opt) => opt.value === val);
+        return found || { value: val, label: val };
+      });
     }
     const singleOpt = options.find((opt) => opt.value === value);
+    if (!singleOpt && value) {
+      return [{ value: value as string, label: value as string }];
+    }
     return singleOpt ? [singleOpt] : [];
   };
 
   const selectedOptions = getSelectedLabels();
+
+  const hasExactMatch = options.some((opt) => {
+    const labelStr = typeof opt.label === "string" ? opt.label : opt.searchLabel || opt.value;
+    return labelStr.toLowerCase() === searchQuery.trim().toLowerCase();
+  });
+
+  const showCustomAddOption = allowCustomValues && searchQuery.trim() !== "" && !hasExactMatch;
 
   return (
     <div
@@ -117,7 +136,7 @@ export default function Dropdown({
       {/* Select Box */}
       <div
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`self-stretch min-h-[48px] px-4 py-2 bg-indigo-50 rounded-lg outline -outline-offset-1 transition-all flex justify-between items-center gap-2 cursor-pointer ${
+        className={`self-stretch min-h-[48px] px-4 py-2 ${selectClassName} rounded-lg outline -outline-offset-1 transition-all flex justify-between items-center gap-2 cursor-pointer ${
           disabled ? "opacity-50 cursor-not-allowed outline-slate-200" : "outline-primary focus-within:ring-2 focus-within:ring-primary/20"
         } ${isOpen ? "ring-2 ring-primary/20 outline-primary/80" : ""}`}
       >
@@ -178,7 +197,7 @@ export default function Dropdown({
       {/* Options Dropdown Panel */}
       {isOpen && (
         <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white border border-slate-200/80 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto p-1.5 flex flex-col gap-0.5 animate-fade-in">
-          {filteredOptions.length === 0 ? (
+          {filteredOptions.length === 0 && !showCustomAddOption ? (
             <div className="py-3 px-4 text-center text-[#9EB7DA] text-sm font-sans">
               No options found
             </div>
@@ -202,6 +221,16 @@ export default function Dropdown({
                 </div>
               );
             })
+          )}
+
+          {showCustomAddOption && (
+            <div
+              onClick={() => handleSelect(searchQuery.trim())}
+              className="px-4 py-2.5 rounded-lg flex items-center justify-between text-base font-medium font-sans text-primary hover:bg-slate-50 cursor-pointer border-t border-slate-100"
+            >
+              <span>Add "{searchQuery.trim()}"</span>
+              <Icon name="Add" className="size-4 bg-primary shrink-0 animate-pulse" />
+            </div>
           )}
         </div>
       )}

@@ -45,25 +45,25 @@ function DashboardPage() {
     {
       label: "Total Articles",
       value: totalArticles,
-      icon: <FiFileText className="w-6 h-6 text-primary" />,
+      icon: <span className="text-primary"><FiFileText size={24} /></span>,
       bgColor: "bg-primary/10",
     },
     {
       label: "Published",
       value: publishedArticles,
-      icon: <FiCheckCircle className="w-6 h-6 text-green-600" />,
+      icon: <span className="text-green-600"><FiCheckCircle size={24} /></span>,
       bgColor: "bg-green-50",
     },
     {
       label: "Drafts",
       value: draftArticles,
-      icon: <FiEdit3 className="w-6 h-6 text-amber-600" />,
+      icon: <span className="text-amber-600"><FiEdit3 size={24} /></span>,
       bgColor: "bg-amber-50",
     },
     {
       label: "Total Users",
       value: totalUsers,
-      icon: <FiUsers className="w-6 h-6 text-indigo-600" />,
+      icon: <span className="text-indigo-600"><FiUsers size={24} /></span>,
       bgColor: "bg-indigo-50",
     },
   ];
@@ -84,7 +84,7 @@ function DashboardPage() {
           to="/cms/article"
           className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-4 py-2.5 rounded-xl font-medium shadow-sm transition-all text-sm"
         >
-          <FiPlus className="w-4 h-4" />
+          <span className="flex items-center"><FiPlus size={16} /></span>
           <span>New Article</span>
         </Link>
       </div>
@@ -158,7 +158,7 @@ function DashboardPage() {
                 className="flex items-center gap-3 p-3 border border-neutral-light rounded-xl hover:border-primary/30 hover:bg-primary/5 transition-all group"
               >
                 <div className="p-2 bg-primary/10 rounded-lg text-primary group-hover:bg-primary group-hover:text-white transition-all">
-                  <FiFileText className="w-5 h-5" />
+                  <span className="flex items-center"><FiFileText size={20} /></span>
                 </div>
                 <div className="text-left">
                   <h5 className="font-semibold text-neutral-dark text-sm">Manage Articles</h5>
@@ -172,7 +172,7 @@ function DashboardPage() {
                   className="flex items-center gap-3 p-3 border border-neutral-light rounded-xl hover:border-primary/30 hover:bg-primary/5 transition-all group"
                 >
                   <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                    <FiUsers className="w-5 h-5" />
+                    <span className="flex items-center"><FiUsers size={20} /></span>
                   </div>
                   <div className="text-left">
                     <h5 className="font-semibold text-neutral-dark text-sm">Manage Users</h5>

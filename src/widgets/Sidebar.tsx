@@ -35,7 +35,7 @@ function Sidebar({ minimal = false }: SidebarProps) {
       id: "doctors",
       label: "Manage Doctors",
       to: "/cms/doctors",
-      icon: "Activity 1",
+      icon: "Stethoscope",
       allowedRoles: ["super_admin", "admin"],
     },
     {
@@ -48,7 +48,7 @@ function Sidebar({ minimal = false }: SidebarProps) {
   ];
 
   const menuContent = (
-    <div className="w-72 p-6 bg-white rounded-[32px] flex flex-col justify-start items-stretch gap-4 shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border border-slate-100/50 shrink-0 sticky top-6">
+    <div className="w-full lg:w-72 p-0 lg:p-6 bg-transparent lg:bg-white rounded-none lg:rounded-[32px] flex flex-col justify-start items-stretch gap-4 shadow-none lg:shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border-0 lg:border border-slate-100/50 shrink-0 lg:sticky lg:top-6">
       <div className="self-stretch justify-start text-[#95B0D7] text-sm tracking-wider font-sans uppercase">
         MENU BAR
       </div>
@@ -97,7 +97,7 @@ function Sidebar({ minimal = false }: SidebarProps) {
   }
 
   return (
-    <aside className="w-80 p-6 bg-primary-light shrink-0 border-r border-slate-200 flex flex-col items-center">
+    <aside className="hidden lg:flex w-80 p-6 bg-primary-light shrink-0 border-r border-slate-200 flex-col items-center">
       {menuContent}
     </aside>
   );

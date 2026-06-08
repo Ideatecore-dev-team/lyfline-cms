@@ -20,6 +20,8 @@ export default function ManageUserModal({
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [error, setError] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
@@ -35,6 +37,8 @@ export default function ManageUserModal({
             setPassword("");
             setConfirmPassword("");
         }
+        setShowPassword(false);
+        setShowConfirmPassword(false);
         setError("");
     }, [user, isOpen]);
 
@@ -98,7 +102,7 @@ export default function ManageUserModal({
             <form
                 onSubmit={handleSubmit}
                 onClick={(e) => e.stopPropagation()}
-                className="w-[600px] p-6 bg-white rounded-[32px] outline -outline-offset-1 outline-slate-200 inline-flex flex-col justify-start items-start gap-6 shadow-2xl"
+                className="w-full max-w-[600px] p-6 bg-white rounded-[32px] outline -outline-offset-1 outline-slate-200 inline-flex flex-col justify-start items-start gap-6 shadow-2xl"
             >
                 {/* Title Bar */}
                 <div className="self-stretch inline-flex justify-between items-start">
@@ -147,7 +151,11 @@ export default function ManageUserModal({
                 {/* Inputs */}
                 <div className="self-stretch flex flex-col justify-start items-start gap-4">
                     <InputBox
-                        label="Username"
+                        label={
+                            <span>
+                                Username <span className="text-accent">*</span>
+                            </span>
+                        }
                         placeholder="Abraham.."
                         value={name}
                         onChange={(e) => setName(e.target.value)}
@@ -156,7 +164,11 @@ export default function ManageUserModal({
                     />
 
                     <InputBox
-                        label="Email"
+                        label={
+                            <span>
+                                Email <span className="text-accent">*</span>
+                            </span>
+                        }
                         type="email"
                         placeholder="abraham@lyfline.com"
                         value={email}
@@ -166,22 +178,34 @@ export default function ManageUserModal({
                     />
 
                     <InputBox
-                        label="Password"
-                        type="password"
+                        label={
+                            <span>
+                                Password {!isEdit && <span className="text-accent">*</span>}
+                            </span>
+                        }
+                        type={showPassword ? "text" : "password"}
                         placeholder={isEdit ? "Fill to change password" : "Fill the password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required={!isEdit}
+                        rightIcon={showPassword ? "Hide" : "Show"}
+                        onRightIconClick={() => setShowPassword(!showPassword)}
                         containerClassName="max-w-none"
                     />
 
                     <InputBox
-                        label="Confirm Password"
-                        type="password"
+                        label={
+                            <span>
+                                Confirm Password {!isEdit && <span className="text-accent">*</span>}
+                            </span>
+                        }
+                        type={showConfirmPassword ? "text" : "password"}
                         placeholder="Confirm the password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         required={!isEdit}
+                        rightIcon={showConfirmPassword ? "Hide" : "Show"}
+                        onRightIconClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         containerClassName="max-w-none"
                     />
                 </div>

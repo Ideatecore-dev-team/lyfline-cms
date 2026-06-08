@@ -25,6 +25,17 @@
   --text-headline-4: 16px;
   --text-paragraph: 14px;
   --text-alt-paragraph: 12px;
+
+  --animate-loading-progress: loading-progress 1.5s infinite linear;
+
+  @keyframes loading-progress {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
 }
 
 @layer base {
