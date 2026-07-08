@@ -14,6 +14,7 @@ export const editDoctor = async (
     specialities: string[];
     qualifications: string[];
     languages: string[];
+    description?: string;
   },
   imageFile?: File | null,
   imageRemoved?: boolean
@@ -90,6 +91,7 @@ export const editDoctor = async (
       doctor_specialty: doctorData.specialities || [],
       doctor_qualification: doctorData.qualifications || [],
       doctor_language: doctorData.languages || [],
+      description: doctorData.description || "",
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)

@@ -17,6 +17,7 @@ export const mapDoctorRow = (row: any, imageUrl: string | null): Doctor => ({
   imageUrl: imageUrl || null,
   hospitalId: row.hospital_id,
   createdAt: row.created_at,
+  description: row.description || "",
 });
 
 export const getDoctors = async (filters?: {

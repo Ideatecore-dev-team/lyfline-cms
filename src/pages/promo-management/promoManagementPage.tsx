@@ -2,15 +2,20 @@ import { useEffect, useState } from "react";
 import Sidebar from "../../widgets/Sidebar";
 import UploadFile from "../../component/uploadFile";
 import Notification from "../../component/notification";
-import DeleteConfirmationModal from "../../component/modal/deleteConfirmation";
-import { uploadPromoImage, deletePromoImage, getPromoImage } from "../../shared/api/promo/promo";
+import InputBox from "../../component/inputbox";
+import Button from "../../component/button";
+import { uploadPromoImage, deletePromoImage, getPromoSettings, savePromoSettings } from "../../shared/api/promo/promo";
 
 export default function PromoManagementPage() {
+    const [originalBannerUrl, setOriginalBannerUrl] = useState<string | null>(null);
     const [currentBannerUrl, setCurrentBannerUrl] = useState<string | null>(null);
+    const [destinationLink, setDestinationLink] = useState("");
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [isImageRemoved, setIsImageRemoved] = useState(false);
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [submitting, setSubmitting] = useState(false);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     const [notification, setNotification] = useState<{
         isOpen: boolean;
@@ -30,58 +35,65 @@ export default function PromoManagementPage() {
         });
     };
 
-    const fetchActiveBanner = async () => {
+    const fetchPromoSettings = async () => {
         setLoading(true);
         setError("");
         try {
-            const url = await getPromoImage();
-            setCurrentBannerUrl(url);
+            const { imageUrl, destinationLink: link } = await getPromoSettings();
+            setCurrentBannerUrl(imageUrl);
+            setOriginalBannerUrl(imageUrl);
+            setDestinationLink(link || "");
         } catch (err: any) {
-            console.error("Error loading promo banner:", err);
-            setError("Failed to fetch current banner from storage.");
+            console.error("Error loading promo settings:", err);
+            setError("Failed to fetch current promo settings from database.");
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchActiveBanner();
+        fetchPromoSettings();
     }, []);
 
-    const handleUpload = async (files: File[]) => {
-        if (files.length === 0) return;
-        setSubmitting(true);
-        setError("");
-        try {
-            const newUrl = await uploadPromoImage(files[0]);
-            setCurrentBannerUrl(newUrl);
-            showNotif("Promo banner uploaded successfully!", "success");
-            // Refresh to update active display
-            await fetchActiveBanner();
-        } catch (err: any) {
-            const errMsg = err.message || "Failed to upload promo image.";
-            setError(errMsg);
-            showNotif(errMsg, "error");
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
     const handleRemoveActive = () => {
-        if (!currentBannerUrl) return;
-        setShowDeleteModal(true);
+        setCurrentBannerUrl(null);
+        setSelectedFile(null);
+        setIsImageRemoved(true);
     };
 
-    const handleConfirmDelete = async () => {
-        if (!currentBannerUrl) return;
+    const handleSave = async () => {
         setSubmitting(true);
         setError("");
         try {
-            await deletePromoImage(currentBannerUrl);
-            setCurrentBannerUrl(null);
-            showNotif("Promo banner deleted successfully.", "success");
+            let finalUrl = currentBannerUrl;
+
+            // 1. If an image was removed, or a new file is being uploaded, delete the old image from the storage bucket
+            if (isImageRemoved || selectedFile) {
+                if (originalBannerUrl) {
+                    await deletePromoImage(originalBannerUrl);
+                }
+                finalUrl = null;
+            }
+
+            // 2. If a new file was chosen, upload it
+            if (selectedFile) {
+                const uploadedUrl = await uploadPromoImage(selectedFile);
+                finalUrl = uploadedUrl;
+            }
+
+            // 3. Save both keys to settings table
+            await savePromoSettings(finalUrl, destinationLink.trim());
+
+            // 4. Update states to match saved values
+            setOriginalBannerUrl(finalUrl);
+            setCurrentBannerUrl(finalUrl);
+            setSelectedFile(null);
+            setIsImageRemoved(false);
+
+            showNotif("Promo settings saved successfully!", "success");
         } catch (err: any) {
-            const errMsg = "Failed to delete promo banner: " + err.message;
+            console.error("Error saving promo settings:", err);
+            const errMsg = err.message || "Failed to save promo settings.";
             setError(errMsg);
             showNotif(errMsg, "error");
         } finally {
@@ -122,51 +134,74 @@ export default function PromoManagementPage() {
                     </div>
                 )}
 
-                {/* Upload Section */}
+                {/* Settings Form Section */}
                 {loading ? (
                     <div className="self-stretch p-12 text-center text-slate-400 font-sans">
-                        Checking storage bucket...
+                        Loading promo settings...
                     </div>
                 ) : (
-                    <div className="self-stretch">
+                    <div className="self-stretch w-full flex flex-col gap-6">
                         {submitting && (
-                            <div className="mb-4">
+                            <div className="w-full">
                                 <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden relative">
                                     <div className="absolute top-0 left-0 h-full w-full bg-primary rounded-full animate-loading-progress" />
                                 </div>
                                 <div className="text-xs text-primary mt-2 font-sans font-medium animate-pulse text-center">
-                                    Processing storage file...
+                                    Saving promo settings...
                                 </div>
                             </div>
                         )}
-                        <UploadFile
-                            label={
-                                <span>
-                                    Banner Promo Image <span className="text-red-500">*</span>
-                                </span>
-                            }
-                            descriptionPrefix="Preferable Size"
-                            descriptionValue="(736px * 448px)"
-                            multiple={false}
-                            defaultImageUrl={currentBannerUrl || undefined}
-                            onRemoveDefaultImage={handleRemoveActive}
-                            onChange={async (files) => {
-                                if (files.length > 0) {
-                                    await handleUpload(files);
+
+                        <div className="flex flex-col gap-5 w-full">
+                            <UploadFile
+                                label={
+                                    <span>
+                                        Banner Promo Image <span className="text-red-500">*</span>
+                                    </span>
                                 }
-                            }}
-                        />
+                                descriptionPrefix="Preferable Size"
+                                descriptionValue="(736px * 448px)"
+                                multiple={false}
+                                defaultImageUrl={currentBannerUrl || undefined}
+                                onRemoveDefaultImage={handleRemoveActive}
+                                onChange={(files) => {
+                                    if (files.length > 0) {
+                                        setSelectedFile(files[0]);
+                                        setCurrentBannerUrl(URL.createObjectURL(files[0]));
+                                        setIsImageRemoved(false);
+                                    } else {
+                                        setSelectedFile(null);
+                                        setCurrentBannerUrl(null);
+                                        setIsImageRemoved(true);
+                                    }
+                                }}
+                            />
+
+                            <InputBox
+                                label="Destination Link"
+                                placeholder="e.g. https://wa.me/628123456789?text=I+am+interested+in+the+promo"
+                                value={destinationLink}
+                                onChange={(e) => setDestinationLink(e.target.value)}
+                                containerClassName="w-full max-w-none animate-in fade-in-50 duration-200"
+                            />
+                        </div>
+
+                        {/* Divider */}
+                        <div className="self-stretch h-px bg-slate-100" />
+
+                        {/* Save Button */}
+                        <div className="self-stretch flex justify-end items-center">
+                            <Button
+                                onClick={handleSave}
+                                disabled={submitting}
+                                text={submitting ? "Saving..." : "Save Promo"}
+                                variant="primary"
+                                className="w-full sm:w-40"
+                            />
+                        </div>
                     </div>
                 )}
             </div>
-
-            <DeleteConfirmationModal
-                isOpen={showDeleteModal}
-                onClose={() => setShowDeleteModal(false)}
-                onConfirm={handleConfirmDelete}
-                title="Remove Promo Banner"
-                message="Are you sure you want to remove the current promo banner? This action will permanently clear it from storage."
-            />
 
             <Notification
                 isOpen={notification.isOpen}
