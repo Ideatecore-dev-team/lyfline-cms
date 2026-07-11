@@ -147,7 +147,7 @@ export const addArticle = async (
     }
 
     return mapArticleRow(data, bannerUrl);
-  } catch (err: any) {
+  } catch (err) {
     // Cleanup files uploaded during this transaction on failure
     if (uploadedPaths.length > 0) {
       await supabase.storage.from(BUCKET_NAME).remove(uploadedPaths);

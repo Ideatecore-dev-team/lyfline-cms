@@ -84,8 +84,9 @@ export default function ManagePartnersForm() {
                 } else {
                     setError("Partner not found.");
                 }
-            } catch (err: any) {
-                setError(err.message || "Failed to load partner details.");
+            } catch (err) {
+                const errorMessage = err instanceof Error ? err.message : "Failed to load partner details.";
+                setError(errorMessage);
             } finally {
                 setLoading(false);
             }
@@ -144,8 +145,9 @@ export default function ManagePartnersForm() {
             }
 
             navigate("/cms/partners", { state: { successMessage: msg } });
-        } catch (err: any) {
-            setError(err.message || "Failed to save partner.");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to save partner.";
+            setError(errorMessage);
         } finally {
             setSubmitting(false);
         }

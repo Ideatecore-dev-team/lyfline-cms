@@ -81,7 +81,7 @@ export const addDoctor = async (
     }
 
     return mapDoctorRow(data, imageUrl);
-  } catch (err: any) {
+  } catch (err) {
     // Attempt clean up of any uploaded files in storage on failure
     if (imageUrl) {
       const path = imageUrl.split(`/public/${encodeURIComponent(BUCKET_NAME)}/`)[1];

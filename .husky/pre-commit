@@ -1,14 +1,21 @@
-echo "🔍 Running pre-commit validation checks (lint & build)..."
+# Determine package manager (pnpm if available, otherwise npm)
+if command -v pnpm >/dev/null 2>&1; then
+  PM="pnpm"
+else
+  PM="npm"
+fi
+
+echo "🔍 Running pre-commit validation checks (lint & build) using $PM..."
 
 # Run linting
-if ! pnpm run lint; then
+if ! $PM run lint; then
   echo ""
   echo "❌ [PRE-COMMIT ERROR] ESLint checks failed! Please fix the linting errors listed above before committing."
   exit 1
 fi
 
 # Run production build
-if ! pnpm run build; then
+if ! $PM run build; then
   echo ""
   echo "❌ [PRE-COMMIT ERROR] Production build failed! Please fix the compilation errors listed above before committing."
   exit 1

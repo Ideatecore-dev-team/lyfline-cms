@@ -1,7 +1,14 @@
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 
-const QuillEditor = ReactQuill as any;
+const QuillEditor = ReactQuill as unknown as React.ComponentType<{
+    theme?: string;
+    value?: string;
+    onChange?: (value: string) => void;
+    modules?: unknown;
+    formats?: string[];
+    placeholder?: string;
+}>;
 
 interface ArticleEditorProps {
     label?: string;

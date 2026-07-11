@@ -96,8 +96,9 @@ export default function ManageDoctorsForm() {
                 } else {
                     showNotif("Doctor not found.", "error");
                 }
-            } catch (err: any) {
-                showNotif(err.message || "Failed to load doctor details.", "error");
+            } catch (err) {
+                const errorMessage = err instanceof Error ? err.message : "Failed to load doctor details.";
+                showNotif(errorMessage, "error");
             } finally {
                 setLoading(false);
             }
@@ -155,8 +156,9 @@ export default function ManageDoctorsForm() {
             }
 
             navigate("/cms/doctors", { state: { successMessage: msg } });
-        } catch (err: any) {
-            showNotif(err.message || "Failed to save doctor.", "error");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to save doctor.";
+            showNotif(errorMessage, "error");
         } finally {
             setSubmitting(false);
         }

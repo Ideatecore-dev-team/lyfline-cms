@@ -92,8 +92,9 @@ function UserManagementPage() {
       await deleteUser(userToDelete.id);
       showNotif(`User "${userToDelete.name}" deleted successfully!`, "success");
       fetchUsers();
-    } catch (err: any) {
-      showNotif("Failed to delete user: " + (err.message || err), "error");
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      showNotif("Failed to delete user: " + errorMessage, "error");
     }
   };
 
@@ -298,8 +299,9 @@ function UserManagementPage() {
               }
               showNotif(`User "${data.name}" updated successfully!`, "success");
               fetchUsers();
-            } catch (err: any) {
-              showNotif("Failed to update user: " + (err.message || err), "error");
+            } catch (err) {
+              const errorMessage = err instanceof Error ? err.message : String(err);
+              showNotif("Failed to update user: " + errorMessage, "error");
               throw err;
             }
           } else {
@@ -310,8 +312,9 @@ function UserManagementPage() {
               await addUser(data.name, data.email, data.password);
               showNotif(`User "${data.name}" added successfully!`, "success");
               fetchUsers();
-            } catch (err: any) {
-              showNotif("Failed to add user: " + (err.message || err), "error");
+            } catch (err) {
+              const errorMessage = err instanceof Error ? err.message : String(err);
+              showNotif("Failed to add user: " + errorMessage, "error");
               throw err;
             }
           }

@@ -106,7 +106,7 @@ export const addPartner = async (
     }
 
     return mapPartnerRow(data);
-  } catch (err: any) {
+  } catch (err) {
     // Attempt clean up of any uploaded files in storage on failure
     if (logoUrl) {
       const path = logoUrl.split(`/public/${encodeURIComponent(BUCKET_NAME)}/`)[1];

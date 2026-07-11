@@ -4,8 +4,24 @@ import { type Doctor } from "../doctor";
 const BUCKET_NAME = "Lyfline Files";
 const DOCTORS_FOLDER = "Doctors";
 
+interface DoctorRow {
+  id: string;
+  doctor_name: string;
+  doctor_title: string;
+  doctor_specialty?: string[];
+  doctor_qualification?: string[];
+  doctor_language?: string[];
+  hospital_id: string;
+  created_at: string;
+  description?: string;
+  partners?: {
+    hospital_name?: string;
+    country?: string;
+  } | null;
+}
+
 // Helper to map DB row to Doctor type
-export const mapDoctorRow = (row: any, imageUrl: string | null): Doctor => ({
+export const mapDoctorRow = (row: DoctorRow, imageUrl: string | null): Doctor => ({
   id: row.id,
   doctorName: row.doctor_name,
   hospital: row.partners?.hospital_name || "Unknown Hospital",
@@ -122,9 +138,9 @@ export const getConsistingHospitals = async (): Promise<string[]> => {
   }
 
   const hospitals = (data || [])
-    .map((row: any) => row.partners?.hospital_name)
+    .map((row) => (row.partners as { hospital_name?: string } | null)?.hospital_name)
     .filter(Boolean);
-  return Array.from(new Set(hospitals));
+  return Array.from(new Set(hospitals as string[]));
 };
 
 export const getConsistingSpecialities = async (): Promise<string[]> => {
@@ -138,9 +154,10 @@ export const getConsistingSpecialities = async (): Promise<string[]> => {
   }
 
   const specialities: string[] = [];
-  (data || []).forEach((row: any) => {
-    if (row.doctor_specialty && Array.isArray(row.doctor_specialty)) {
-      specialities.push(...row.doctor_specialty);
+  (data || []).forEach((row) => {
+    const list = row.doctor_specialty as string[] | null;
+    if (list && Array.isArray(list)) {
+      specialities.push(...list);
     }
   });
   return Array.from(new Set(specialities.filter(Boolean)));
@@ -157,7 +174,7 @@ export const getConsistingCountries = async (): Promise<string[]> => {
   }
 
   const countries = (data || [])
-    .map((row: any) => row.partners?.country)
+    .map((row) => (row.partners as { country?: string } | null)?.country)
     .filter(Boolean);
-  return Array.from(new Set(countries));
+  return Array.from(new Set(countries as string[]));
 };

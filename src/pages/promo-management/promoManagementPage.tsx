@@ -43,7 +43,7 @@ export default function PromoManagementPage() {
             setCurrentBannerUrl(imageUrl);
             setOriginalBannerUrl(imageUrl);
             setDestinationLink(link || "");
-        } catch (err: any) {
+        } catch (err) {
             console.error("Error loading promo settings:", err);
             setError("Failed to fetch current promo settings from database.");
         } finally {
@@ -91,9 +91,9 @@ export default function PromoManagementPage() {
             setIsImageRemoved(false);
 
             showNotif("Promo settings saved successfully!", "success");
-        } catch (err: any) {
+        } catch (err) {
             console.error("Error saving promo settings:", err);
-            const errMsg = err.message || "Failed to save promo settings.";
+            const errMsg = err instanceof Error ? err.message : "Failed to save promo settings.";
             setError(errMsg);
             showNotif(errMsg, "error");
         } finally {
