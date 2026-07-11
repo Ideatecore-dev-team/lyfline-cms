@@ -1,4 +1,5 @@
 import { supabase } from "../../../supabaseClient";
+import { uploadImage } from "../media";
 
 const bucketName = "Lyfline Files";
 const folderName = "Promo Image";
@@ -19,33 +20,8 @@ export const uploadPromoImage = async (file: File): Promise<string> => {
     }
   }
 
-  // 2. Upload new file
-  const fileExt = file.name.split(".").pop();
-  const fileName = `promo_${Date.now()}.${fileExt}`;
-  const filePath = `${folderName}/${fileName}`;
-
-  const { data, error } = await supabase.storage
-    .from(bucketName)
-    .upload(filePath, file, {
-      cacheControl: "3600",
-      upsert: true,
-    });
-
-  if (error) {
-    console.error("Error uploading promo image:", error.message);
-    throw new Error(error.message);
-  }
-
-  if (!data) {
-    throw new Error("Failed to upload file.");
-  }
-
-  // 3. Get Public URL
-  const { data: urlData } = supabase.storage
-    .from(bucketName)
-    .getPublicUrl(filePath);
-
-  return urlData.publicUrl;
+  // 2. Upload new file via server-side WebP compression endpoint
+  return await uploadImage(file, folderName);
 };
 
 export const deletePromoImage = async (fileNameOrUrl: string): Promise<void> => {

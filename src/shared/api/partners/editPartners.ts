@@ -1,6 +1,7 @@
 import { supabase } from "../../../supabaseClient";
 import { type Partner } from "../partner";
 import { mapPartnerRow } from "./lookupPartners";
+import { uploadImage } from "../media";
 
 const BUCKET_NAME = "Lyfline Files";
 const LOGO_FOLDER = "Partners/Logo";
@@ -48,30 +49,14 @@ export const editPartner = async (
     // A new logo file was uploaded
     const fileExt = logoFile.name.split(".").pop();
     const fileName = `${id}_logo_${Date.now()}.${fileExt}`;
-    const filePath = `${LOGO_FOLDER}/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from(BUCKET_NAME)
-      .upload(filePath, logoFile, {
-        cacheControl: "3600",
-        upsert: true,
-      });
-
-    if (uploadError) {
-      throw new Error(`Logo upload failed: ${uploadError.message}`);
-    }
-
-    const { data: urlData } = supabase.storage
-      .from(BUCKET_NAME)
-      .getPublicUrl(filePath);
+    finalLogoUrl = await uploadImage(logoFile, LOGO_FOLDER, fileName);
 
     // Mark old logo for deletion if it exists
     if (currentPartner.hospital_logo) {
       const oldLogoPath = getPathFromUrl(currentPartner.hospital_logo);
       if (oldLogoPath) storageFilesToDelete.push(oldLogoPath);
     }
-
-    finalLogoUrl = urlData.publicUrl;
   } else if (logoRemoved) {
     // Logo was removed
     if (currentPartner.hospital_logo) {
@@ -99,24 +84,9 @@ export const editPartner = async (
       const file = newImageFiles[i];
       const fileExt = file.name.split(".").pop();
       const fileName = `${id}_img_${i}_${Date.now()}.${fileExt}`;
-      const filePath = `${IMAGES_FOLDER}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .upload(filePath, file, {
-          cacheControl: "3600",
-          upsert: true,
-        });
-
-      if (uploadError) {
-        throw new Error(`Hospital image ${i + 1} upload failed: ${uploadError.message}`);
-      }
-
-      const { data: urlData } = supabase.storage
-        .from(BUCKET_NAME)
-        .getPublicUrl(filePath);
-
-      finalImageUrls.push(urlData.publicUrl);
+      const publicUrl = await uploadImage(file, IMAGES_FOLDER, fileName);
+      finalImageUrls.push(publicUrl);
     }
   }
 

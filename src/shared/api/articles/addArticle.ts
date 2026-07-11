@@ -1,6 +1,7 @@
 import { supabase } from "../../../supabaseClient";
 import { type Article } from "../article";
 import { mapArticleRow } from "./lookupArticle";
+import { uploadImage, getStoragePathFromUrl } from "../media";
 
 const BUCKET_NAME = "Lyfline Files";
 const BANNER_FOLDER = "Articles/Banner";
@@ -48,27 +49,12 @@ export const processContentImages = async (
     try {
       const blob = base64ToBlob(base64Data, mimeType);
       const fileName = `${articleId}_content_img_${index}_${Date.now()}.${ext}`;
-      const filePath = `${CONTENT_IMAGES_FOLDER}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .upload(filePath, blob, {
-          contentType: mimeType,
-          cacheControl: "3600",
-          upsert: true,
-        });
-
-      if (uploadError) {
-        throw new Error(`Content image ${index} upload failed: ${uploadError.message}`);
+      const publicUrl = await uploadImage(blob, CONTENT_IMAGES_FOLDER, fileName);
+      const path = getStoragePathFromUrl(publicUrl, BUCKET_NAME);
+      if (path) {
+        uploadedPaths.push(path);
       }
-
-      uploadedPaths.push(filePath);
-
-      const { data: urlData } = supabase.storage
-        .from(BUCKET_NAME)
-        .getPublicUrl(filePath);
-
-      const publicUrl = urlData.publicUrl;
 
       // Replace base64 src inside the tag with public url
       const updatedTag = fullTag.replace(/src="data:[^"]+"/, `src="${publicUrl}"`);
@@ -100,26 +86,12 @@ export const addArticle = async (
     if (bannerFile) {
       const fileExt = bannerFile.name.split(".").pop();
       const fileName = `${articleId}_banner_${Date.now()}.${fileExt}`;
-      const filePath = `${BANNER_FOLDER}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .upload(filePath, bannerFile, {
-          cacheControl: "3600",
-          upsert: true,
-        });
-
-      if (uploadError) {
-        throw new Error(`Banner upload failed: ${uploadError.message}`);
+      bannerUrl = await uploadImage(bannerFile, BANNER_FOLDER, fileName);
+      const path = getStoragePathFromUrl(bannerUrl, BUCKET_NAME);
+      if (path) {
+        uploadedPaths.push(path);
       }
-
-      uploadedPaths.push(filePath);
-
-      const { data: urlData } = supabase.storage
-        .from(BUCKET_NAME)
-        .getPublicUrl(filePath);
-
-      bannerUrl = urlData.publicUrl;
     }
 
     // 3. Insert Article Row into DB

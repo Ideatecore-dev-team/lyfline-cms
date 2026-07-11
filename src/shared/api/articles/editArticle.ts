@@ -2,6 +2,7 @@ import { supabase } from "../../../supabaseClient";
 import { type Article } from "../article";
 import { mapArticleRow } from "./lookupArticle";
 import { processContentImages } from "./addArticle";
+import { uploadImage, getStoragePathFromUrl } from "../media";
 
 const BUCKET_NAME = "Lyfline Files";
 const BANNER_FOLDER = "Articles/Banner";
@@ -43,31 +44,17 @@ export const editArticle = async (
     if (bannerFile) {
       const fileExt = bannerFile.name.split(".").pop();
       const fileName = `${id}_banner_${Date.now()}.${fileExt}`;
-      const filePath = `${BANNER_FOLDER}/${fileName}`;
 
       // Delete old banners from storage first
       if (pathsToDelete.length > 0) {
         await supabase.storage.from(BUCKET_NAME).remove(pathsToDelete);
       }
 
-      const { error: uploadError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .upload(filePath, bannerFile, {
-          cacheControl: "3600",
-          upsert: true,
-        });
-
-      if (uploadError) {
-        throw new Error(`Banner upload failed: ${uploadError.message}`);
+      finalBannerUrl = await uploadImage(bannerFile, BANNER_FOLDER, fileName);
+      const path = getStoragePathFromUrl(finalBannerUrl, BUCKET_NAME);
+      if (path) {
+        uploadedPaths.push(path);
       }
-
-      uploadedPaths.push(filePath);
-
-      const { data: urlData } = supabase.storage
-        .from(BUCKET_NAME)
-        .getPublicUrl(filePath);
-
-      finalBannerUrl = urlData.publicUrl;
     } else if (bannerRemoved) {
       if (pathsToDelete.length > 0) {
         await supabase.storage.from(BUCKET_NAME).remove(pathsToDelete);
