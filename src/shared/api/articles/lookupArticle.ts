@@ -12,6 +12,7 @@ interface ArticleRow {
   article_content: string;
   created_at: string;
   updated_at: string;
+  imageUrl?: string | null;
 }
 
 export const mapArticleRow = (row: ArticleRow, imageUrl: string | null): Article => ({
@@ -20,7 +21,7 @@ export const mapArticleRow = (row: ArticleRow, imageUrl: string | null): Article
   category: row.category,
   categoryColor: row.category_color,
   content: row.article_content,
-  imageUrl: imageUrl || null,
+  imageUrl: imageUrl || row.imageUrl || null,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });

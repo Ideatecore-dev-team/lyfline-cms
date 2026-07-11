@@ -74,6 +74,7 @@ export const editDoctor = async (
       doctor_qualification: doctorData.qualifications || [],
       doctor_language: doctorData.languages || [],
       description: doctorData.description || "",
+      avatarUrl: finalImageUrl,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)

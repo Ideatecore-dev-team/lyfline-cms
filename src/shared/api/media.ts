@@ -1,19 +1,39 @@
+import { compressImage } from "../utils/imageCompressor";
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export const uploadImage = async (file: File | Blob, folder: string, filename?: string): Promise<string> => {
+  let fileToUpload = file;
+
+  if (file instanceof File) {
+    try {
+      fileToUpload = await compressImage(file);
+    } catch (err) {
+      console.error("Client-side compression failed, trying to upload original file:", err);
+    }
+  }
+
   const formData = new FormData();
   if (filename) {
-    formData.append("image", file, filename);
+    // If the file extension changed due to webp compression, update filename suffix if present
+    let finalName = filename;
+    if (fileToUpload.type === "image/webp" && !filename.endsWith(".webp")) {
+      const originalNameWithoutExt = filename.substring(0, filename.lastIndexOf(".")) || filename;
+      finalName = `${originalNameWithoutExt}.webp`;
+    }
+    formData.append("image", fileToUpload, finalName);
   } else {
-    formData.append("image", file);
+    formData.append("image", fileToUpload);
   }
 
   const response = await fetch(`${API_URL}/api/media/upload?folder=${encodeURIComponent(folder)}`, {
     method: "POST",
     body: formData,
-    // Note: Do NOT set Content-Type header. The browser will set it automatically
-    // with the boundary string when passing a FormData object.
   });
+
+  if (response.status === 413) {
+    throw new Error("Ukuran berkas gambar terlalu besar untuk server. Batas maksimal server adalah 1MB (setelah kompresi).");
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));

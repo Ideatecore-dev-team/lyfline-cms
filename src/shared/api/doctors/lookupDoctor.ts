@@ -14,6 +14,7 @@ interface DoctorRow {
   hospital_id: string;
   created_at: string;
   description?: string;
+  avatarUrl?: string | null;
   partners?: {
     hospital_name?: string;
     country?: string;
@@ -30,7 +31,7 @@ export const mapDoctorRow = (row: DoctorRow, imageUrl: string | null): Doctor =>
   specialities: row.doctor_specialty || [],
   qualifications: row.doctor_qualification || [],
   languages: row.doctor_language || [],
-  imageUrl: imageUrl || null,
+  imageUrl: row.avatarUrl || imageUrl || null,
   hospitalId: row.hospital_id,
   createdAt: row.created_at,
   description: row.description || "",

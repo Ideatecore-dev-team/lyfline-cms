@@ -104,6 +104,7 @@ export const addArticle = async (
           category: articleData.category,
           category_color: articleData.categoryColor || "#000000",
           article_content: processedContent,
+          imageUrl: bannerUrl,
         },
       ])
       .select()

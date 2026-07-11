@@ -71,6 +71,7 @@ export const editArticle = async (
         category_color: articleData.categoryColor,
         article_content: processedContent,
         updated_at: new Date().toISOString(),
+        imageUrl: finalBannerUrl,
       })
       .eq("id", id)
       .select()

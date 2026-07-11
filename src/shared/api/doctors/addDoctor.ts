@@ -48,6 +48,7 @@ export const addDoctor = async (
           doctor_qualification: doctorData.qualifications || [],
           doctor_language: doctorData.languages || [],
           description: doctorData.description || "",
+          avatarUrl: imageUrl,
         },
       ])
       .select("*, partners(*)")
