@@ -222,14 +222,18 @@ pnpm run preview
 
 ## 🔧 Environment Variables
 
-Create a `.env.local` file in the project root with your Supabase credentials:
+Create a `.env` file in the project root with your Supabase and backend credentials:
 
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key-here
+VITE_API_URL=http://localhost:5000
 ```
 
-These are consumed by `src/supabaseClient.tsx` to initialize the Supabase client. **Never commit `.env.local` to version control** (it is already included in `.gitignore`).
+- `VITE_SUPABASE_URL` & `VITE_SUPABASE_ANON_KEY` are consumed by `src/supabaseClient.tsx` to initialize the Supabase client.
+- `VITE_API_URL` points to the `lyfline-server` backend. All image uploads (Promo images, Doctor avatars, Partner logos, Article banners & inline images) are routed here first to undergo automated WebP image compression (80% quality) using `sharp` before being stored on Supabase Storage.
+
+**Never commit `.env` or `.env.local` to version control** (it is already included in `.gitignore`).
 
 ---
 

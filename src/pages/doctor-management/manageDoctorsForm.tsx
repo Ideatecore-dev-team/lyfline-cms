@@ -6,6 +6,7 @@ import Button from "../../component/button";
 import InputBox from "../../component/inputbox";
 import UploadFile from "../../component/uploadFile";
 import Dropdown from "../../component/dropdown";
+import DescriptionBox from "../../component/descriptionBox";
 import Notification from "../../component/notification";
 import { getPartners, type Partner } from "../../shared/api/partner";
 import { addDoctor, editDoctor, getDoctorById } from "../../shared/api/doctor";
@@ -32,6 +33,7 @@ export default function ManageDoctorsForm() {
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imageRemoved, setImageRemoved] = useState(false);
+    const [description, setDescription] = useState("");
 
     // Partnerships for dropdown lookup
     const [partners, setPartners] = useState<Partner[]>([]);
@@ -90,11 +92,13 @@ export default function ManageDoctorsForm() {
                     setSpecialities(doctor.specialities || []);
                     setQualifications(doctor.qualifications || []);
                     setLanguages(doctor.languages || []);
+                    setDescription(doctor.description || "");
                 } else {
                     showNotif("Doctor not found.", "error");
                 }
-            } catch (err: any) {
-                showNotif(err.message || "Failed to load doctor details.", "error");
+            } catch (err) {
+                const errorMessage = err instanceof Error ? err.message : "Failed to load doctor details.";
+                showNotif(errorMessage, "error");
             } finally {
                 setLoading(false);
             }
@@ -128,6 +132,7 @@ export default function ManageDoctorsForm() {
                 specialities,
                 qualifications,
                 languages,
+                description,
             });
 
             const doctorData = {
@@ -137,6 +142,7 @@ export default function ManageDoctorsForm() {
                 specialities,
                 qualifications,
                 languages,
+                description: description.trim(),
             };
 
             const msg = id
@@ -150,8 +156,9 @@ export default function ManageDoctorsForm() {
             }
 
             navigate("/cms/doctors", { state: { successMessage: msg } });
-        } catch (err: any) {
-            showNotif(err.message || "Failed to save doctor.", "error");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to save doctor.";
+            showNotif(errorMessage, "error");
         } finally {
             setSubmitting(false);
         }
@@ -282,6 +289,15 @@ export default function ManageDoctorsForm() {
                                 value={doctorTitle}
                                 onChange={(e) => setDoctorTitle(e.target.value)}
                                 required
+                                containerClassName="max-w-none"
+                            />
+
+                            {/* Doctor Description */}
+                            <DescriptionBox
+                                label="Doctor Description"
+                                placeholder="Write something about the doctor..."
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
                                 containerClassName="max-w-none"
                             />
 

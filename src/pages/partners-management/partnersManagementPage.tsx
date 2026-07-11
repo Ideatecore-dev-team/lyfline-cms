@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { type Partner, getPartners, deletePartner, getConsistingCountries } from "../../shared/api/partner";
 import { authApi } from "../../shared/api/auth";
@@ -56,7 +56,7 @@ function PartnersManagementPage() {
     // Form states
     const [partnerToDelete, setPartnerToDelete] = useState<Partner | null>(null);
 
-    const fetchPartners = async (nameFilter = filterName, countryFilter = filterCountry) => {
+    const fetchPartners = useCallback(async (nameFilter = filterName, countryFilter = filterCountry) => {
         setLoading(true);
         try {
             const data = await getPartners({
@@ -70,7 +70,7 @@ function PartnersManagementPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [filterName, filterCountry]);
 
     const loadCountries = async () => {
         try {
@@ -91,7 +91,7 @@ function PartnersManagementPage() {
         }, 300);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [filterName, filterCountry]);
+    }, [filterName, filterCountry, fetchPartners]);
 
     useEffect(() => {
         if (location.state?.successMessage) {
@@ -114,8 +114,9 @@ function PartnersManagementPage() {
             const countriesList = await getConsistingCountries();
             setCountries(countriesList);
             fetchPartners(filterName, filterCountry);
-        } catch (err: any) {
-            showNotif("Failed to delete partner: " + (err.message || err), "error");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            showNotif("Failed to delete partner: " + errorMessage, "error");
         }
     };
 

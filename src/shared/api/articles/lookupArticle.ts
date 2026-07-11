@@ -4,13 +4,24 @@ import { type Article } from "../article";
 const BUCKET_NAME = "Lyfline Files";
 const BANNER_FOLDER = "Articles/Banner";
 
-export const mapArticleRow = (row: any, imageUrl: string | null): Article => ({
+interface ArticleRow {
+  id: string;
+  article_title: string;
+  category: string;
+  category_color: string;
+  article_content: string;
+  created_at: string;
+  updated_at: string;
+  imageUrl?: string | null;
+}
+
+export const mapArticleRow = (row: ArticleRow, imageUrl: string | null): Article => ({
   id: row.id,
   title: row.article_title,
   category: row.category,
   categoryColor: row.category_color,
   content: row.article_content,
-  imageUrl: imageUrl || null,
+  imageUrl: imageUrl || row.imageUrl || null,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });

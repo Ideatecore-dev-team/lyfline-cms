@@ -8,7 +8,13 @@ export const editUser = async (
   email: string,
   password?: string
 ): Promise<User> => {
-  const updateData: Record<string, any> = {
+  const updateData: {
+    username: string;
+    email: string;
+    role: string;
+    updated_at: string;
+    password_hash?: string;
+  } = {
     username: name,
     email: email,
     role: "admin", // Always "admin" when pushed to the database

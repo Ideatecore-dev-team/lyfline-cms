@@ -1,6 +1,7 @@
 import { supabase } from "../../../supabaseClient";
 import { type Doctor } from "../doctor";
 import { mapDoctorRow } from "./lookupDoctor";
+import { uploadImage } from "../media";
 
 const BUCKET_NAME = "Lyfline Files";
 const DOCTORS_FOLDER = "Doctors";
@@ -14,6 +15,7 @@ export const editDoctor = async (
     specialities: string[];
     qualifications: string[];
     languages: string[];
+    description?: string;
   },
   imageFile?: File | null,
   imageRemoved?: boolean
@@ -48,31 +50,12 @@ export const editDoctor = async (
 
   // 2. Handle Image Changes
   if (imageFile) {
-    const fileExt = imageFile.name.split(".").pop();
-    const fileName = `${id}.${fileExt}`;
-    const filePath = `${DOCTORS_FOLDER}/${fileName}`;
-
     // Delete old images first to ensure we don't have conflicting extensions
     if (pathsToDelete.length > 0) {
       await supabase.storage.from(BUCKET_NAME).remove(pathsToDelete);
     }
 
-    const { error: uploadError } = await supabase.storage
-      .from(BUCKET_NAME)
-      .upload(filePath, imageFile, {
-        cacheControl: "3600",
-        upsert: true,
-      });
-
-    if (uploadError) {
-      throw new Error(`Doctor image upload failed: ${uploadError.message}`);
-    }
-
-    const { data: urlData } = supabase.storage
-      .from(BUCKET_NAME)
-      .getPublicUrl(filePath);
-
-    finalImageUrl = urlData.publicUrl;
+    finalImageUrl = await uploadImage(imageFile, DOCTORS_FOLDER, `${id}.webp`);
   } else if (imageRemoved) {
     if (pathsToDelete.length > 0) {
       await supabase.storage.from(BUCKET_NAME).remove(pathsToDelete);
@@ -90,6 +73,8 @@ export const editDoctor = async (
       doctor_specialty: doctorData.specialities || [],
       doctor_qualification: doctorData.qualifications || [],
       doctor_language: doctorData.languages || [],
+      description: doctorData.description || "",
+      avatarUrl: finalImageUrl,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)

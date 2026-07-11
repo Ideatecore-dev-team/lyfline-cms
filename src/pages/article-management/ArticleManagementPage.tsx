@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { type Article, getArticles, deleteArticle } from "../../shared/api/article";
 import Sidebar from "../../widgets/Sidebar";
@@ -6,7 +6,7 @@ import Button from "../../component/button";
 import InputBox from "../../component/inputbox";
 import Dropdown from "../../component/dropdown";
 import DeleteConfirmationModal from "../../component/modal/deleteConfirmation";
-import Badge from "../../component/badge";
+import Badge, { type BadgeVariant } from "../../component/badge";
 import Notification from "../../component/notification";
 import Pagination from "../../component/pagination";
 
@@ -23,11 +23,11 @@ const Icon = ({ name, className = "size-5 bg-current" }: { name: string; classNa
 
 const DEFAULT_CATEGORIES = ["Mental Health", "Mindfulness", "Relationships", "Health", "Parenting"];
 
-const getBadgeVariant = (color?: string): any => {
+const getBadgeVariant = (color?: string): BadgeVariant => {
     if (!color) return "green";
     const normalized = color.toLowerCase();
-    const validVariants = ["green", "red", "blue", "yellow", "purple", "gray", "indigo", "orange"];
-    return validVariants.includes(normalized) ? normalized : "green";
+    const validVariants: BadgeVariant[] = ["green", "red", "blue", "yellow", "purple", "gray", "indigo", "orange"];
+    return validVariants.includes(normalized as BadgeVariant) ? (normalized as BadgeVariant) : "green";
 };
 
 function ArticleManagementPage() {
@@ -72,7 +72,7 @@ function ArticleManagementPage() {
     // Form / Navigation states
     const [articleToDelete, setArticleToDelete] = useState<Article | null>(null);
 
-    const fetchArticles = async (titleFilter = filterName, categoryFilter = filterCategory) => {
+    const fetchArticles = useCallback(async (titleFilter = filterName, categoryFilter = filterCategory) => {
         setLoading(true);
         try {
             const data = await getArticles({
@@ -86,16 +86,15 @@ function ArticleManagementPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [filterName, filterCategory]);
 
-    // Debounced automatic filtering
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
             fetchArticles(filterName, filterCategory);
         }, 300);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [filterName, filterCategory]);
+    }, [filterName, filterCategory, fetchArticles]);
 
     const handleAddClick = () => {
         navigate("/cms/article/add");
@@ -116,8 +115,9 @@ function ArticleManagementPage() {
             showNotif(`Article "${articleToDelete.title}" deleted successfully!`, "success");
             setArticleToDelete(null);
             fetchArticles(filterName, filterCategory);
-        } catch (err: any) {
-            showNotif("Failed to delete article: " + (err.message || err), "error");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            showNotif("Failed to delete article: " + errorMessage, "error");
         }
     };
 

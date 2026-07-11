@@ -22,6 +22,8 @@ const Icon = ({ name, className = "size-5 bg-current" }: { name: string; classNa
     />
 );
 
+const DEFAULT_CATEGORIES = ["Mental Health", "Mindfulness", "Relationships", "Health", "Parenting"];
+
 export default function ManageArticleForm() {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
@@ -38,7 +40,6 @@ export default function ManageArticleForm() {
     const [submitting, setSubmitting] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    const DEFAULT_CATEGORIES = ["Mental Health", "Mindfulness", "Relationships", "Health", "Parenting"];
     const [availableCategories, setAvailableCategories] = useState<string[]>(DEFAULT_CATEGORIES);
 
     const [notification, setNotification] = useState<{
@@ -94,8 +95,9 @@ export default function ManageArticleForm() {
                 } else {
                     showNotif("Article not found.", "error");
                 }
-            } catch (err: any) {
-                showNotif(err.message || "Failed to load article details.", "error");
+            } catch (err) {
+                const errorMessage = err instanceof Error ? err.message : "Failed to load article details.";
+                showNotif(errorMessage, "error");
             } finally {
                 setLoading(false);
             }
@@ -143,8 +145,9 @@ export default function ManageArticleForm() {
 
             // Return to articles list page
             navigate("/cms/article", { state: { successMessage: msg } });
-        } catch (err: any) {
-            showNotif(err.message || "Failed to save article.", "error");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Failed to save article.";
+            showNotif(errorMessage, "error");
         } finally {
             setSubmitting(false);
         }

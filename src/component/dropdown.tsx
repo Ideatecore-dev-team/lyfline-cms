@@ -6,18 +6,29 @@ export interface DropdownOption {
   searchLabel?: string;
 }
 
-interface DropdownProps {
+interface BaseDropdownProps {
   label?: ReactNode;
   placeholder?: string;
   options: DropdownOption[];
-  value: string | string[]; // Single value or array of values for multiple select
-  onChange: (value: any) => void;
-  multiple?: boolean;
   containerClassName?: string;
   disabled?: boolean;
   selectClassName?: string;
   allowCustomValues?: boolean;
 }
+
+interface SingleDropdownProps extends BaseDropdownProps {
+  multiple?: false;
+  value: string;
+  onChange: (value: string) => void;
+}
+
+interface MultipleDropdownProps extends BaseDropdownProps {
+  multiple: true;
+  value: string[];
+  onChange: (value: string[]) => void;
+}
+
+type DropdownProps = SingleDropdownProps | MultipleDropdownProps;
 
 const Icon = ({ name, className = "size-5 bg-current" }: { name: string; className?: string }) => (
   <span
@@ -78,13 +89,13 @@ export default function Dropdown({
   const handleSelect = (optionValue: string) => {
     if (multiple) {
       const currentValues = Array.isArray(value) ? value : [];
-      if (currentValues.includes(optionValue)) {
-        onChange(currentValues.filter((v) => v !== optionValue));
-      } else {
-        onChange([...currentValues, optionValue]);
-      }
+      const nextValues = currentValues.includes(optionValue)
+        ? currentValues.filter((v) => v !== optionValue)
+        : [...currentValues, optionValue];
+      
+      (onChange as (val: string[]) => void)(nextValues);
     } else {
-      onChange(optionValue);
+      (onChange as (val: string) => void)(optionValue);
       setIsOpen(false);
       setSearchQuery("");
     }
@@ -94,7 +105,7 @@ export default function Dropdown({
   const handleRemoveItem = (e: React.MouseEvent, optionValue: string) => {
     e.stopPropagation();
     if (multiple && Array.isArray(value)) {
-      onChange(value.filter((v) => v !== optionValue));
+      (onChange as (val: string[]) => void)(value.filter((v) => v !== optionValue));
     }
   };
 

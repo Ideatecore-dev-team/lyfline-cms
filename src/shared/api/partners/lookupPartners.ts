@@ -1,8 +1,24 @@
 import { supabase } from "../../../supabaseClient";
 import { type Partner } from "../partner";
 
+interface PartnerRow {
+  id: string;
+  hospital_name: string;
+  city: string;
+  country: string;
+  description?: string | null;
+  contact?: string | null;
+  email?: string | null;
+  address: string;
+  hospital_logo?: string | null;
+  hospital_images?: string[];
+  google_maps_link?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // Helper to map DB row to Partner type
-export const mapPartnerRow = (row: any): Partner => ({
+export const mapPartnerRow = (row: PartnerRow): Partner => ({
   id: row.id,
   hospitalName: row.hospital_name,
   city: row.city,

@@ -10,6 +10,7 @@ export interface Doctor {
   imageUrl?: string | null;
   hospitalId?: string;
   createdAt: string;
+  description?: string;
 }
 
 export {

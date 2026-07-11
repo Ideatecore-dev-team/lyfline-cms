@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { type Doctor, getDoctors, deleteDoctor, getConsistingHospitals, getConsistingCountries } from "../../shared/api/doctor";
 import { authApi } from "../../shared/api/auth";
@@ -58,7 +58,7 @@ function DoctorManagementPage() {
     // Form states
     const [doctorToDelete, setDoctorToDelete] = useState<Doctor | null>(null);
 
-    const fetchDoctors = async (nameFilter = filterName, hospitalFilter = filterHospital, countryFilter = filterCountry) => {
+    const fetchDoctors = useCallback(async (nameFilter = filterName, hospitalFilter = filterHospital, countryFilter = filterCountry) => {
         setLoading(true);
         try {
             const data = await getDoctors({
@@ -73,7 +73,7 @@ function DoctorManagementPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [filterName, filterHospital, filterCountry]);
 
     const loadFilterOptions = async () => {
         try {
@@ -92,14 +92,13 @@ function DoctorManagementPage() {
         loadFilterOptions();
     }, []);
 
-    // Debounced automatic filtering
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
             fetchDoctors(filterName, filterHospital, filterCountry);
         }, 300);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [filterName, filterHospital, filterCountry]);
+    }, [filterName, filterHospital, filterCountry, fetchDoctors]);
 
     useEffect(() => {
         if (location.state?.successMessage) {
@@ -121,8 +120,9 @@ function DoctorManagementPage() {
             // Refresh list and dropdowns
             loadFilterOptions();
             fetchDoctors(filterName, filterHospital, filterCountry);
-        } catch (err: any) {
-            showNotif("Failed to delete doctor: " + (err.message || err), "error");
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : String(err);
+            showNotif("Failed to delete doctor: " + errorMessage, "error");
         }
     };
 

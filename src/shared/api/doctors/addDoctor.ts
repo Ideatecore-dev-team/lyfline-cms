@@ -1,6 +1,7 @@
 import { supabase } from "../../../supabaseClient";
 import { type Doctor } from "../doctor";
 import { mapDoctorRow } from "./lookupDoctor";
+import { uploadImage, getStoragePathFromUrl } from "../media";
 
 const BUCKET_NAME = "Lyfline Files";
 const DOCTORS_FOLDER = "Doctors";
@@ -21,6 +22,7 @@ export const addDoctor = async (
     specialities: string[];
     qualifications: string[];
     languages: string[];
+    description?: string;
   },
   imageFile?: File | null
 ): Promise<Doctor> => {
@@ -28,28 +30,9 @@ export const addDoctor = async (
   let imageUrl: string | null = null;
 
   try {
-    // 1. Upload Doctor Image if provided
+    // 1. Upload Doctor Image if provided via server-side WebP compression endpoint
     if (imageFile) {
-      const fileExt = imageFile.name.split(".").pop();
-      const fileName = `${doctorId}.${fileExt}`;
-      const filePath = `${DOCTORS_FOLDER}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .upload(filePath, imageFile, {
-          cacheControl: "3600",
-          upsert: true,
-        });
-
-      if (uploadError) {
-        throw new Error(`Doctor image upload failed: ${uploadError.message}`);
-      }
-
-      const { data: urlData } = supabase.storage
-        .from(BUCKET_NAME)
-        .getPublicUrl(filePath);
-
-      imageUrl = urlData.publicUrl;
+      imageUrl = await uploadImage(imageFile, DOCTORS_FOLDER, `${doctorId}.webp`);
     }
 
     // 2. Insert Doctor row into Supabase Database
@@ -64,6 +47,8 @@ export const addDoctor = async (
           doctor_specialty: doctorData.specialities || [],
           doctor_qualification: doctorData.qualifications || [],
           doctor_language: doctorData.languages || [],
+          description: doctorData.description || "",
+          avatarUrl: imageUrl,
         },
       ])
       .select("*, partners(*)")
@@ -79,12 +64,12 @@ export const addDoctor = async (
     }
 
     return mapDoctorRow(data, imageUrl);
-  } catch (err: any) {
+  } catch (err) {
     // Attempt clean up of any uploaded files in storage on failure
     if (imageUrl) {
-      const path = imageUrl.split(`/public/${encodeURIComponent(BUCKET_NAME)}/`)[1];
+      const path = getStoragePathFromUrl(imageUrl, BUCKET_NAME);
       if (path) {
-        await supabase.storage.from(BUCKET_NAME).remove([decodeURIComponent(path)]);
+        await supabase.storage.from(BUCKET_NAME).remove([path]);
       }
     }
     throw err;

@@ -1,4 +1,5 @@
 import { supabase } from "../../../supabaseClient";
+import { uploadImage } from "../media";
 
 const bucketName = "Lyfline Files";
 const folderName = "Promo Image";
@@ -19,33 +20,8 @@ export const uploadPromoImage = async (file: File): Promise<string> => {
     }
   }
 
-  // 2. Upload new file
-  const fileExt = file.name.split(".").pop();
-  const fileName = `promo_${Date.now()}.${fileExt}`;
-  const filePath = `${folderName}/${fileName}`;
-
-  const { data, error } = await supabase.storage
-    .from(bucketName)
-    .upload(filePath, file, {
-      cacheControl: "3600",
-      upsert: true,
-    });
-
-  if (error) {
-    console.error("Error uploading promo image:", error.message);
-    throw new Error(error.message);
-  }
-
-  if (!data) {
-    throw new Error("Failed to upload file.");
-  }
-
-  // 3. Get Public URL
-  const { data: urlData } = supabase.storage
-    .from(bucketName)
-    .getPublicUrl(filePath);
-
-  return urlData.publicUrl;
+  // 2. Upload new file via server-side WebP compression endpoint
+  return await uploadImage(file, folderName);
 };
 
 export const deletePromoImage = async (fileNameOrUrl: string): Promise<void> => {
@@ -105,4 +81,45 @@ export const getPromoImage = async (): Promise<string | null> => {
     .getPublicUrl(`${folderName}/${fileName}`);
 
   return urlData.publicUrl;
+};
+
+export const getPromoSettings = async (): Promise<{ imageUrl: string | null; destinationLink: string | null }> => {
+  const { data, error } = await supabase
+    .from("settings")
+    .select("key, value")
+    .in("key", ["promo_image_url", "promo_destination_link"]);
+
+  if (error) {
+    console.error("Error fetching promo settings:", error.message);
+    throw new Error(error.message);
+  }
+
+  const result = { imageUrl: null as string | null, destinationLink: null as string | null };
+  if (data) {
+    data.forEach((row) => {
+      if (row.key === "promo_image_url") {
+        result.imageUrl = row.value || null;
+      } else if (row.key === "promo_destination_link") {
+        result.destinationLink = row.value || "";
+      }
+    });
+  }
+  return result;
+};
+
+export const savePromoSettings = async (
+  imageUrl: string | null,
+  destinationLink: string
+): Promise<void> => {
+  const { error } = await supabase
+    .from("settings")
+    .upsert([
+      { key: "promo_image_url", value: imageUrl || "" },
+      { key: "promo_destination_link", value: destinationLink },
+    ]);
+
+  if (error) {
+    console.error("Error saving promo settings:", error.message);
+    throw new Error(error.message);
+  }
 };
