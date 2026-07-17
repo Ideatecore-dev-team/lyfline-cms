@@ -3,6 +3,12 @@
   publish = "dist"
 
 [[redirects]]
+  from = "https://cms-lyfline.netlify.app/*"
+  to = "https://cms.lyfline.id/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
