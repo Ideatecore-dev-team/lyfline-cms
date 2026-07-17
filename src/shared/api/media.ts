@@ -28,6 +28,9 @@ export const uploadImage = async (file: File | Blob, folder: string, filename?: 
 
   const response = await fetch(`${API_URL}/api/media/upload?folder=${encodeURIComponent(folder)}`, {
     method: "POST",
+    headers: {
+      "x-upload-api-key": import.meta.env.VITE_UPLOAD_API_KEY || "",
+    },
     body: formData,
   });
 

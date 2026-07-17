@@ -1,4 +1,3 @@
-import bcrypt from "bcryptjs";
 import { supabase } from "../../supabaseClient";
 
 export interface User {
@@ -21,7 +20,27 @@ interface SupabaseUserRecord {
 
 export const authApi = {
   login: async (email: string, password: string): Promise<{ token: string; user: User }> => {
-    // 1. Query the custom 'users' database table directly for the matching email
+    // 1. Authenticate with Supabase Auth (sets the session and token automatically)
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (authError) {
+      console.error("Auth error:", authError.message);
+      throw new Error(
+        authError.message === "Invalid login credentials"
+          ? "Invalid email or password."
+          : authError.message
+      );
+    }
+
+    if (!authData.user) {
+      throw new Error("Invalid email or password.");
+    }
+
+    // 2. Query the custom 'users' database table directly for user details (role, username)
+    // This runs as the authenticated user, which is allowed by our upcoming RLS policy.
     const { data, error: profileError } = await supabase
       .from('users')
       .select('*')
@@ -34,19 +53,10 @@ export const authApi = {
     }
 
     if (!data) {
-      throw new Error("Invalid email or password.");
+      throw new Error("User profile not found in database. Please contact administrator.");
     }
 
     const profileData = data as SupabaseUserRecord;
-
-    // 2. Validate the password against the secure bcrypt hash
-    const isPasswordValid = profileData.password_hash
-      ? bcrypt.compareSync(password, profileData.password_hash)
-      : false;
-
-    if (!isPasswordValid) {
-      throw new Error("Invalid email or password.");
-    }
 
     // 3. Map database role to CMS role ('super_admin' | 'admin' | 'editor')
     let cmsRole: 'super_admin' | 'admin' | 'editor' = 'editor';
@@ -62,7 +72,7 @@ export const authApi = {
 
     // 4. Construct user profile matching application model
     const userProfile: User = {
-      id: profileData.id || "",
+      id: profileData.id || authData.user.id,
       name: profileData.username || email.split('@')[0],
       email: profileData.email || email,
       role: cmsRole,
@@ -70,14 +80,15 @@ export const authApi = {
     };
 
     // 5. Save simulated session to localStorage for routing compatibility
-    const mockToken = `custom-session-token-${profileData.id}`;
-    localStorage.setItem('lyfline_token', mockToken);
+    const token = authData.session?.access_token || `custom-session-token-${profileData.id}`;
+    localStorage.setItem('lyfline_token', token);
     localStorage.setItem('lyfline_current_user', JSON.stringify(userProfile));
 
-    return { token: mockToken, user: userProfile };
+    return { token, user: userProfile };
   },
 
   logout: async (): Promise<void> => {
+    await supabase.auth.signOut();
     localStorage.removeItem('lyfline_token');
     localStorage.removeItem('lyfline_current_user');
   },
