@@ -1,21 +1,5 @@
 import { supabase } from "../../../supabaseClient";
-
-const BUCKET_NAME = "Lyfline Files";
-
-// Helper to extract bucket file path from full public URL
-const getPathFromUrl = (url: string): string | null => {
-  try {
-    const decodeUrl = decodeURIComponent(url);
-    const searchString = `/public/${BUCKET_NAME}/`;
-    const index = decodeUrl.indexOf(searchString);
-    if (index !== -1) {
-      return decodeUrl.substring(index + searchString.length);
-    }
-  } catch (err) {
-    console.error("Failed to parse URL for deletion:", err);
-  }
-  return null;
-};
+import { deleteImage } from "../media";
 
 export const deletePartner = async (id: string): Promise<void> => {
   // 1. Get partner info to retrieve logo and image URLs
@@ -30,35 +14,20 @@ export const deletePartner = async (id: string): Promise<void> => {
     throw new Error(getError.message);
   }
 
-  // 2. Prepare list of storage paths to delete
-  const pathsToDelete: string[] = [];
-
+  // 2. Remove files from VPS
   if (partner) {
     if (partner.hospital_logo) {
-      const logoPath = getPathFromUrl(partner.hospital_logo);
-      if (logoPath) pathsToDelete.push(logoPath);
+      await deleteImage(partner.hospital_logo);
     }
 
     if (partner.hospital_images && Array.isArray(partner.hospital_images)) {
-      partner.hospital_images.forEach((imgUrl: string) => {
-        const imgPath = getPathFromUrl(imgUrl);
-        if (imgPath) pathsToDelete.push(imgPath);
-      });
+      for (const imgUrl of partner.hospital_images) {
+        await deleteImage(imgUrl);
+      }
     }
   }
 
-  // 3. Remove files from storage
-  if (pathsToDelete.length > 0) {
-    const { error: storageError } = await supabase.storage
-      .from(BUCKET_NAME)
-      .remove(pathsToDelete);
-
-    if (storageError) {
-      console.warn("Could not delete some storage files:", storageError.message);
-    }
-  }
-
-  // 4. Delete DB Row
+  // 3. Delete DB Row
   const { error } = await supabase
     .from("partners")
     .delete()

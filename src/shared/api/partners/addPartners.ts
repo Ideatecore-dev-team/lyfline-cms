@@ -1,33 +1,24 @@
 import { supabase } from "../../../supabaseClient";
 import { type Partner } from "../partner";
 import { mapPartnerRow } from "./lookupPartners";
-import { uploadImage, getStoragePathFromUrl } from "../media";
+import { uploadImage, deleteImage } from "../media";
 
-const BUCKET_NAME = "Lyfline Files";
 const LOGO_FOLDER = "Partners/Logo";
 const IMAGES_FOLDER = "Partners/Hospital Images";
-
-const generateUUID = (): string => {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === "x" ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-};
 
 export const addPartner = async (
   partnerData: Omit<Partner, "id" | "createdAt" | "updatedAt">,
   logoFile?: File | null,
   imageFiles?: File[]
 ): Promise<Partner> => {
-  const partnerId = generateUUID();
+  const partnerId = crypto.randomUUID();
   let logoUrl: string | null = null;
   const imageUrls: string[] = [];
 
   try {
     // 1. Upload Logo if provided
     if (logoFile) {
-      const fileExt = logoFile.name.split(".").pop();
+      const fileExt = logoFile.name.split(".").pop() || "jpg";
       const fileName = `${partnerId}_logo_${Date.now()}.${fileExt}`;
 
       logoUrl = await uploadImage(logoFile, LOGO_FOLDER, fileName);
@@ -37,7 +28,7 @@ export const addPartner = async (
     if (imageFiles && imageFiles.length > 0) {
       for (let i = 0; i < imageFiles.length; i++) {
         const file = imageFiles[i];
-        const fileExt = file.name.split(".").pop();
+        const fileExt = file.name.split(".").pop() || "jpg";
         const fileName = `${partnerId}_img_${i}_${Date.now()}.${fileExt}`;
 
         const publicUrl = await uploadImage(file, IMAGES_FOLDER, fileName);
@@ -77,20 +68,13 @@ export const addPartner = async (
 
     return mapPartnerRow(data);
   } catch (err) {
-    // Attempt clean up of any uploaded files in storage on failure
+    // Attempt clean up of any uploaded files on failure
     if (logoUrl) {
-      const path = getStoragePathFromUrl(logoUrl, BUCKET_NAME);
-      if (path) {
-        await supabase.storage.from(BUCKET_NAME).remove([path]);
-      }
+      await deleteImage(logoUrl);
     }
     if (imageUrls.length > 0) {
-      const pathsToDelete = imageUrls.map(
-        (url) => getStoragePathFromUrl(url, BUCKET_NAME)
-      ).filter(Boolean) as string[];
-      
-      if (pathsToDelete.length > 0) {
-        await supabase.storage.from(BUCKET_NAME).remove(pathsToDelete);
+      for (const url of imageUrls) {
+        await deleteImage(url);
       }
     }
     throw err;

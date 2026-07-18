@@ -1,9 +1,8 @@
 import { supabase } from "../../../supabaseClient";
 import { type Doctor } from "../doctor";
 import { mapDoctorRow } from "./lookupDoctor";
-import { uploadImage } from "../media";
+import { uploadImage, deleteImage } from "../media";
 
-const BUCKET_NAME = "Lyfline Files";
 const DOCTORS_FOLDER = "Doctors";
 
 export const editDoctor = async (
@@ -21,9 +20,9 @@ export const editDoctor = async (
   imageRemoved?: boolean
 ): Promise<Doctor> => {
   // 1. Get current doctor details
-  const { error: getError } = await supabase
+  const { data: currentDoctor, error: getError } = await supabase
     .from("doctors")
-    .select("id")
+    .select("avatarUrl")
     .eq("id", id)
     .single();
 
@@ -32,33 +31,17 @@ export const editDoctor = async (
     throw new Error(getError.message);
   }
 
-  // Find existing images in storage
-  const { data: files } = await supabase.storage
-    .from(BUCKET_NAME)
-    .list(DOCTORS_FOLDER, { search: id });
-
-  const oldImages = files ? files.filter((f) => f.name.startsWith(`${id}.`)) : [];
-  const pathsToDelete = oldImages.map((f) => `${DOCTORS_FOLDER}/${f.name}`);
-
-  let finalImageUrl: string | null = null;
-  if (oldImages.length > 0) {
-    const { data: urlData } = supabase.storage
-      .from(BUCKET_NAME)
-      .getPublicUrl(`${DOCTORS_FOLDER}/${oldImages[0].name}`);
-    finalImageUrl = urlData.publicUrl;
-  }
+  let finalImageUrl: string | null = currentDoctor?.avatarUrl || null;
 
   // 2. Handle Image Changes
   if (imageFile) {
-    // Delete old images first to ensure we don't have conflicting extensions
-    if (pathsToDelete.length > 0) {
-      await supabase.storage.from(BUCKET_NAME).remove(pathsToDelete);
+    if (finalImageUrl) {
+      await deleteImage(finalImageUrl);
     }
-
     finalImageUrl = await uploadImage(imageFile, DOCTORS_FOLDER, `${id}.webp`);
   } else if (imageRemoved) {
-    if (pathsToDelete.length > 0) {
-      await supabase.storage.from(BUCKET_NAME).remove(pathsToDelete);
+    if (finalImageUrl) {
+      await deleteImage(finalImageUrl);
     }
     finalImageUrl = null;
   }

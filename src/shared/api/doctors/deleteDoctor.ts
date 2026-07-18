@@ -1,31 +1,25 @@
 import { supabase } from "../../../supabaseClient";
-
-const BUCKET_NAME = "Lyfline Files";
-const DOCTORS_FOLDER = "Doctors";
+import { deleteImage } from "../media";
 
 export const deleteDoctor = async (id: string): Promise<void> => {
-  // 1. Find and delete associated storage images
-  const { data: files } = await supabase.storage
-    .from(BUCKET_NAME)
-    .list(DOCTORS_FOLDER, { search: id });
+  // 1. Get doctor details to retrieve avatarUrl
+  const { data: doctor, error: getError } = await supabase
+    .from("doctors")
+    .select("avatarUrl")
+    .eq("id", id)
+    .maybeSingle();
 
-  if (files && files.length > 0) {
-    const pathsToDelete = files
-      .filter((f) => f.name.startsWith(`${id}.`))
-      .map((f) => `${DOCTORS_FOLDER}/${f.name}`);
-
-    if (pathsToDelete.length > 0) {
-      const { error: storageError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .remove(pathsToDelete);
-
-      if (storageError) {
-        console.warn("Could not delete some storage files for doctor:", storageError.message);
-      }
-    }
+  if (getError) {
+    console.error("Error fetching doctor details for deletion:", getError.message);
+    throw new Error(getError.message);
   }
 
-  // 2. Delete DB row
+  // 2. Remove file from VPS
+  if (doctor && doctor.avatarUrl) {
+    await deleteImage(doctor.avatarUrl);
+  }
+
+  // 3. Delete DB row
   const { error } = await supabase
     .from("doctors")
     .delete()

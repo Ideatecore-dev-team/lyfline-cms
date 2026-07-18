@@ -1,27 +1,11 @@
 import { supabase } from "../../../supabaseClient";
-
-const BUCKET_NAME = "Lyfline Files";
-const BANNER_FOLDER = "Articles/Banner";
-
-const getPathFromUrl = (url: string): string | null => {
-  try {
-    const decodeUrl = decodeURIComponent(url);
-    const searchString = `/public/${BUCKET_NAME}/`;
-    const index = decodeUrl.indexOf(searchString);
-    if (index !== -1) {
-      return decodeUrl.substring(index + searchString.length);
-    }
-  } catch (err) {
-    console.error("Failed to parse URL for deletion:", err);
-  }
-  return null;
-};
+import { deleteImage } from "../media";
 
 export const deleteArticle = async (id: string): Promise<void> => {
   // 1. Get article details to retrieve content and find storage banner
   const { data: article, error: getError } = await supabase
     .from("articles")
-    .select("article_content")
+    .select("imageUrl, article_content")
     .eq("id", id)
     .maybeSingle();
 
@@ -30,7 +14,7 @@ export const deleteArticle = async (id: string): Promise<void> => {
     throw new Error(getError.message);
   }
 
-  const pathsToDelete: string[] = [];
+  const urlsToDelete: string[] = [];
 
   // 2. Resolve content images to delete
   if (article && article.article_content) {
@@ -38,34 +22,20 @@ export const deleteArticle = async (id: string): Promise<void> => {
     const matches = [...article.article_content.matchAll(imgUrlRegex)];
     matches.forEach((match) => {
       const url = match[1];
-      const path = getPathFromUrl(url);
-      if (path) {
-        pathsToDelete.push(path);
+      if (url) {
+        urlsToDelete.push(url);
       }
     });
   }
 
-  // 3. Resolve banner images to delete
-  const { data: bannerFiles } = await supabase.storage
-    .from(BUCKET_NAME)
-    .list(BANNER_FOLDER, { search: id });
-
-  if (bannerFiles && bannerFiles.length > 0) {
-    const matchingBanners = bannerFiles
-      .filter((f) => f.name.startsWith(`${id}_banner_`))
-      .map((f) => `${BANNER_FOLDER}/${f.name}`);
-    pathsToDelete.push(...matchingBanners);
+  // 3. Resolve banner image to delete
+  if (article && article.imageUrl) {
+    urlsToDelete.push(article.imageUrl);
   }
 
-  // 4. Remove all files from Supabase Storage
-  if (pathsToDelete.length > 0) {
-    const { error: storageError } = await supabase.storage
-      .from(BUCKET_NAME)
-      .remove(pathsToDelete);
-
-    if (storageError) {
-      console.warn("Could not delete some storage files for article:", storageError.message);
-    }
+  // 4. Remove all files from VPS
+  for (const url of urlsToDelete) {
+    await deleteImage(url);
   }
 
   // 5. Delete Database Row

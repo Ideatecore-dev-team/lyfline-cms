@@ -1,18 +1,9 @@
 import { supabase } from "../../../supabaseClient";
 import { type Doctor } from "../doctor";
 import { mapDoctorRow } from "./lookupDoctor";
-import { uploadImage, getStoragePathFromUrl } from "../media";
+import { uploadImage, deleteImage } from "../media";
 
-const BUCKET_NAME = "Lyfline Files";
 const DOCTORS_FOLDER = "Doctors";
-
-const generateUUID = (): string => {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === "x" ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-};
 
 export const addDoctor = async (
   doctorData: {
@@ -26,7 +17,7 @@ export const addDoctor = async (
   },
   imageFile?: File | null
 ): Promise<Doctor> => {
-  const doctorId = generateUUID();
+  const doctorId = crypto.randomUUID();
   let imageUrl: string | null = null;
 
   try {
@@ -65,12 +56,9 @@ export const addDoctor = async (
 
     return mapDoctorRow(data, imageUrl);
   } catch (err) {
-    // Attempt clean up of any uploaded files in storage on failure
+    // Attempt clean up of any uploaded files on failure
     if (imageUrl) {
-      const path = getStoragePathFromUrl(imageUrl, BUCKET_NAME);
-      if (path) {
-        await supabase.storage.from(BUCKET_NAME).remove([path]);
-      }
+      await deleteImage(imageUrl);
     }
     throw err;
   }

@@ -1,19 +1,10 @@
 import { supabase } from "../../../supabaseClient";
 import { type Article } from "../article";
 import { mapArticleRow } from "./lookupArticle";
-import { uploadImage, getStoragePathFromUrl } from "../media";
+import { uploadImage, deleteImage } from "../media";
 
-const BUCKET_NAME = "Lyfline Files";
 const BANNER_FOLDER = "Articles/Banner";
 const CONTENT_IMAGES_FOLDER = "Articles/Content Images";
-
-const generateUUID = (): string => {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === "x" ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-};
 
 // Helper to convert Base64 string to a Blob object
 function base64ToBlob(base64: string, mimeType: string): Blob {
@@ -30,7 +21,7 @@ function base64ToBlob(base64: string, mimeType: string): Blob {
 export const processContentImages = async (
   articleId: string,
   contentHtml: string,
-  uploadedPaths: string[]
+  uploadedUrls: string[]
 ): Promise<string> => {
   let updatedHtml = contentHtml;
 
@@ -51,9 +42,8 @@ export const processContentImages = async (
       const fileName = `${articleId}_content_img_${index}_${Date.now()}.${ext}`;
 
       const publicUrl = await uploadImage(blob, CONTENT_IMAGES_FOLDER, fileName);
-      const path = getStoragePathFromUrl(publicUrl, BUCKET_NAME);
-      if (path) {
-        uploadedPaths.push(path);
+      if (publicUrl) {
+        uploadedUrls.push(publicUrl);
       }
 
       // Replace base64 src inside the tag with public url
@@ -74,23 +64,22 @@ export const addArticle = async (
   articleData: Omit<Article, "id" | "imageUrl" | "createdAt" | "updatedAt">,
   bannerFile?: File | null
 ): Promise<Article> => {
-  const articleId = generateUUID();
+  const articleId = crypto.randomUUID();
   let bannerUrl: string | null = null;
-  const uploadedPaths: string[] = [];
+  const uploadedUrls: string[] = [];
 
   try {
     // 1. Process inline content images (Base64 -> Supabase Link)
-    const processedContent = await processContentImages(articleId, articleData.content, uploadedPaths);
+    const processedContent = await processContentImages(articleId, articleData.content, uploadedUrls);
 
     // 2. Upload Banner Image if provided
     if (bannerFile) {
-      const fileExt = bannerFile.name.split(".").pop();
+      const fileExt = bannerFile.name.split(".").pop() || "jpg";
       const fileName = `${articleId}_banner_${Date.now()}.${fileExt}`;
 
       bannerUrl = await uploadImage(bannerFile, BANNER_FOLDER, fileName);
-      const path = getStoragePathFromUrl(bannerUrl, BUCKET_NAME);
-      if (path) {
-        uploadedPaths.push(path);
+      if (bannerUrl) {
+        uploadedUrls.push(bannerUrl);
       }
     }
 
@@ -119,11 +108,13 @@ export const addArticle = async (
       throw new Error("Failed to create article.");
     }
 
-    return mapArticleRow(data, bannerUrl);
+    return mapArticleRow(data);
   } catch (err) {
     // Cleanup files uploaded during this transaction on failure
-    if (uploadedPaths.length > 0) {
-      await supabase.storage.from(BUCKET_NAME).remove(uploadedPaths);
+    if (uploadedUrls.length > 0) {
+      for (const url of uploadedUrls) {
+        await deleteImage(url);
+      }
     }
     throw err;
   }
