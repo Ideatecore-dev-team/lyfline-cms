@@ -45,6 +45,13 @@ function Sidebar({ minimal = false }: SidebarProps) {
       icon: "Pen",
       allowedRoles: ["super_admin", "admin"],
     },
+    {
+      id: "media",
+      label: "Manage Media",
+      to: "/cms/media",
+      icon: "Image 2",
+      allowedRoles: ["super_admin", "admin"],
+    },
   ];
 
   const menuContent = (

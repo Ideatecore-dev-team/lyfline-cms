@@ -140,7 +140,7 @@ function PartnersManagementPage() {
     return (
         <div className="w-full px-0 py-4 lg:py-8 flex flex-col lg:flex-row justify-center items-stretch lg:items-start gap-6 bg-background">
             {/* Left Sidebar */}
-            <div className="hidden lg:block shrink-0">
+            <div className="hidden lg:block shrink-0 sticky top-0 self-start z-10">
                 <Sidebar minimal />
             </div>
 
@@ -210,23 +210,23 @@ function PartnersManagementPage() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex-1 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start">
-                                    <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden">
-                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
+                                <div className="flex-1 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start min-w-0">
+                                    <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden min-w-0">
+                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins'] truncate">
                                             Hospital Name
                                         </div>
                                     </div>
                                 </div>
-                                <div className="w-64 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start">
-                                    <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden">
-                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
+                                <div className="w-64 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start min-w-0">
+                                    <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden min-w-0">
+                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins'] truncate">
                                             City
                                         </div>
                                     </div>
                                 </div>
-                                <div className="w-44 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start">
-                                    <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden">
-                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
+                                <div className="w-44 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start min-w-0">
+                                    <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden min-w-0">
+                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins'] truncate">
                                             Country
                                         </div>
                                     </div>
@@ -262,23 +262,32 @@ function PartnersManagementPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex-1 self-stretch inline-flex flex-col justify-center items-start">
-                                            <div className="self-stretch flex-1 p-3 flex flex-col justify-center items-start overflow-hidden">
-                                                <div className="self-stretch justify-start text-black/90 text-sm font-normal font-['Poppins']">
+                                        <div className="flex-1 self-stretch inline-flex flex-col justify-center items-start min-w-0">
+                                            <div className="self-stretch flex-1 p-3 flex flex-col justify-center items-start overflow-hidden min-w-0">
+                                                <div
+                                                    className="self-stretch justify-start text-black/90 text-sm font-normal font-['Poppins'] truncate"
+                                                    title={partner.hospitalName}
+                                                >
                                                     {partner.hospitalName}
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="w-64 self-stretch inline-flex flex-col justify-center items-start">
-                                            <div className="self-stretch flex-1 p-3 flex flex-col justify-center items-start overflow-hidden">
-                                                <div className="self-stretch justify-start text-neutral-900 text-sm font-normal font-['Poppins']">
+                                        <div className="w-64 self-stretch inline-flex flex-col justify-center items-start min-w-0">
+                                            <div className="self-stretch flex-1 p-3 flex flex-col justify-center items-start overflow-hidden min-w-0">
+                                                <div
+                                                    className="self-stretch justify-start text-neutral-900 text-sm font-normal font-['Poppins'] truncate"
+                                                    title={partner.city}
+                                                >
                                                     {partner.city}
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="w-44 self-stretch inline-flex flex-col justify-center items-start">
-                                            <div className="self-stretch flex-1 p-3 flex flex-col justify-center items-start overflow-hidden">
-                                                <div className="self-stretch justify-start text-neutral-900 text-sm font-normal font-['Poppins']">
+                                        <div className="w-44 self-stretch inline-flex flex-col justify-center items-start min-w-0">
+                                            <div className="self-stretch flex-1 p-3 flex flex-col justify-center items-start overflow-hidden min-w-0">
+                                                <div
+                                                    className="self-stretch justify-start text-neutral-900 text-sm font-normal font-['Poppins'] truncate"
+                                                    title={partner.country}
+                                                >
                                                     {partner.country}
                                                 </div>
                                             </div>

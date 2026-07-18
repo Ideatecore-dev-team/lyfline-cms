@@ -1,6 +1,7 @@
 import { useState, useRef, type DragEvent, type ChangeEvent, type ReactNode } from "react";
 import Button from "./button";
 import Notification from "./notification";
+import MediaSelectModal, { type MediaSelectModalItem } from "./modal/mediaSelectModal";
 
 interface UploadFileProps {
     label: ReactNode;
@@ -36,6 +37,7 @@ export default function UploadFile({
     const [dragActive, setDragActive] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
+    const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [notification, setNotification] = useState<{
@@ -56,7 +58,7 @@ export default function UploadFile({
         });
     };
 
-    const handleFiles = (files: FileList | null) => {
+    const handleFiles = (files: FileList | File[] | null) => {
         if (!files) return;
 
         const newFiles = Array.from(files);
@@ -82,6 +84,21 @@ export default function UploadFile({
 
         if (onChange) {
             onChange(updatedFiles);
+        }
+    };
+
+    const handleMediaSelect = async (item: MediaSelectModalItem) => {
+        try {
+            const response = await fetch(item.url);
+            const blob = await response.blob();
+            const file = new File([blob], item.fileName || "media-asset.webp", {
+                type: blob.type || "image/webp",
+            });
+            handleFiles([file]);
+            showNotif(`Selected "${item.fileName}" from Media Library`, "success");
+        } catch (err) {
+            console.error("Failed to select media item:", err);
+            showNotif("Failed to load selected media asset.", "error");
         }
     };
 
@@ -116,13 +133,8 @@ export default function UploadFile({
 
     const removeFile = (index: number) => {
         const updatedFiles = selectedFiles.filter((_, i) => i !== index);
-        setSelectedFiles(updatedFiles);
-
-        // Clean up object URLs
-        if (previews[index]) {
-            URL.revokeObjectURL(previews[index]);
-        }
         const updatedPreviews = previews.filter((_, i) => i !== index);
+        setSelectedFiles(updatedFiles);
         setPreviews(updatedPreviews);
 
         if (onChange) {
@@ -152,9 +164,22 @@ export default function UploadFile({
 
     return (
         <div className={`w-full inline-flex flex-col justify-start items-start gap-3 ${className}`}>
-            {/* Label */}
-            <div className="self-stretch justify-start text-black text-sm font-normal font-['Poppins']">
-                {label}
+            {/* Label Header */}
+            <div className="self-stretch flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div className="text-black text-sm font-normal font-['Poppins']">
+                    {label}
+                </div>
+                <Button
+                    type="button"
+                    variant="ghost-primary"
+                    text="Pick From Media Library"
+                    leftIcon="Image 2"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsMediaModalOpen(true);
+                    }}
+                    className="h-8! px-3! text-xs!"
+                />
             </div>
 
             {/* Hidden input element (always rendered so ref remains valid) */}
@@ -176,7 +201,7 @@ export default function UploadFile({
                         onDragLeave={handleDrag}
                         onDrop={handleDrop}
                         onClick={triggerBrowse}
-                        className={`self-stretch py-14 rounded-[32px] outline-1 -outline-offset-1 transition-all cursor-pointer flex flex-col justify-start items-center gap-2.5 overflow-hidden ${dragActive
+                        className={`self-stretch py-12 px-4 rounded-[32px] outline-1 -outline-offset-1 transition-all cursor-pointer flex flex-col justify-start items-center gap-2.5 overflow-hidden ${dragActive
                             ? "outline-primary bg-indigo-50/30 scale-[0.99] outline-dashed"
                             : "outline-[#9EB7DA] hover:bg-slate-100/70"
                             }`}
@@ -196,15 +221,9 @@ export default function UploadFile({
                             </div>
 
                             {/* Description Text */}
-                            <div className="flex flex-col justify-start items-center">
+                            <div className="flex flex-col justify-start items-center gap-1">
                                 <div className="text-center justify-start text-black text-sm font-medium font-['Poppins']">
-                                    Drag & Drop here
-                                </div>
-                                <div className="text-center justify-start text-black text-sm font-medium font-['Poppins']">
-                                    or
-                                </div>
-                                <div className="text-center justify-start text-primary hover:text-primary-hover text-sm font-semibold font-['Poppins'] transition-all">
-                                    Browse
+                                    Drag & Drop here <br></br>or <span className="text-primary hover:text-primary-hover font-semibold cursor-pointer">Browse</span>
                                 </div>
                             </div>
                         </div>
@@ -215,7 +234,7 @@ export default function UploadFile({
                 {(selectedFiles.length > 0 || defaultImageUrl || existingImageUrls.length > 0) && (
                     <div className="self-stretch flex flex-col gap-2 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
                         <div className="text-xs font-semibold text-[#9EB7DA] uppercase tracking-wider mb-1 font-sans">
-                            Selected Files ({multiple 
+                            Selected Files ({multiple
                                 ? (selectedFiles.length + existingImageUrls.length + (defaultImageUrl ? 1 : 0))
                                 : (selectedFiles.length > 0 ? selectedFiles.length : (defaultImageUrl ? 1 : 0))
                             })
@@ -385,6 +404,11 @@ export default function UploadFile({
                     </div>
                 )}
             </div>
+            <MediaSelectModal
+                isOpen={isMediaModalOpen}
+                onClose={() => setIsMediaModalOpen(false)}
+                onSelect={handleMediaSelect}
+            />
             <Notification
                 isOpen={notification.isOpen}
                 message={notification.message}

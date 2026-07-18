@@ -153,7 +153,7 @@ function ArticleManagementPage() {
     return (
         <div className="w-full px-0 py-4 lg:py-8 flex flex-col lg:flex-row justify-center items-stretch lg:items-start gap-6 bg-background">
             {/* Left Sidebar */}
-            <div className="hidden lg:block shrink-0">
+            <div className="hidden lg:block shrink-0 sticky top-0 self-start z-10">
                 <Sidebar minimal />
             </div>
 
@@ -232,9 +232,9 @@ function ArticleManagementPage() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex-1 flex flex-col justify-center items-start">
-                                    <div className="w-full flex-1 px-3 py-4 flex justify-start items-center gap-2 overflow-hidden">
-                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
+                                <div className="flex-1 flex flex-col justify-center items-start min-w-0">
+                                    <div className="w-full flex-1 px-3 py-4 flex justify-start items-center gap-2 overflow-hidden min-w-0">
+                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins'] truncate">
                                             Article Name
                                         </div>
                                     </div>
@@ -291,9 +291,12 @@ function ArticleManagementPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex-1 flex flex-col justify-center items-start">
-                                            <div className="w-full flex-1 p-3 flex flex-col justify-center items-start overflow-hidden">
-                                                <div className="w-full justify-start text-black/90 text-sm font-normal font-['Poppins']">
+                                        <div className="flex-1 flex flex-col justify-center items-start min-w-0">
+                                            <div className="w-full flex-1 p-3 flex flex-col justify-center items-start overflow-hidden min-w-0">
+                                                <div
+                                                    className="w-full justify-start text-black/90 text-sm font-normal font-['Poppins'] line-clamp-2"
+                                                    title={article.title}
+                                                >
                                                     {article.title}
                                                 </div>
                                             </div>

@@ -26,6 +26,7 @@ const PartnersManagementPage = lazy(() => import("../pages/partners-management/p
 const ManagePartnersForm = lazy(() => import("../pages/partners-management/managePartnersForm"));
 const DoctorManagementPage = lazy(() => import("../pages/doctor-management/doctorManagementPage"));
 const ManageDoctorsForm = lazy(() => import("../pages/doctor-management/manageDoctorsForm"));
+const MediaManagementPage = lazy(() => import("../pages/media-management/MediaManagementPage"));
 
 export default function App() {
   return (
@@ -55,6 +56,7 @@ export default function App() {
               <Route path="/cms/doctors" element={<DoctorManagementPage />} />
               <Route path="/cms/doctors/add" element={<ManageDoctorsForm />} />
               <Route path="/cms/doctors/edit/:id" element={<ManageDoctorsForm />} />
+              <Route path="/cms/media" element={<MediaManagementPage />} />
             </Route>
           </Route>
 
