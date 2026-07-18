@@ -1,9 +1,6 @@
 import { supabase } from "../../../supabaseClient";
 import { type Article } from "../article";
 
-const BUCKET_NAME = "Lyfline Files";
-const BANNER_FOLDER = "Articles/Banner";
-
 interface ArticleRow {
   id: string;
   article_title: string;
@@ -15,13 +12,13 @@ interface ArticleRow {
   imageUrl?: string | null;
 }
 
-export const mapArticleRow = (row: ArticleRow, imageUrl: string | null): Article => ({
+export const mapArticleRow = (row: ArticleRow): Article => ({
   id: row.id,
   title: row.article_title,
   category: row.category,
   categoryColor: row.category_color,
   content: row.article_content,
-  imageUrl: imageUrl || row.imageUrl || null,
+  imageUrl: row.imageUrl || null,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -46,26 +43,7 @@ export const getArticles = async (filters?: {
     throw new Error(error.message);
   }
 
-  // Fetch all banner files in storage to resolve URLs
-  const { data: files } = await supabase.storage
-    .from(BUCKET_NAME)
-    .list(BANNER_FOLDER);
-
-  const imageMap: Record<string, string> = {};
-  if (files) {
-    files.forEach((file) => {
-      const index = file.name.indexOf("_banner_");
-      if (index !== -1) {
-        const articleId = file.name.substring(0, index);
-        const { data: urlData } = supabase.storage
-          .from(BUCKET_NAME)
-          .getPublicUrl(`${BANNER_FOLDER}/${file.name}`);
-        imageMap[articleId] = urlData.publicUrl;
-      }
-    });
-  }
-
-  return (data || []).map((row) => mapArticleRow(row, imageMap[row.id] || null));
+  return (data || []).map((row) => mapArticleRow(row));
 };
 
 export const getArticleById = async (id: string): Promise<Article | null> => {
@@ -82,23 +60,7 @@ export const getArticleById = async (id: string): Promise<Article | null> => {
 
   if (!data) return null;
 
-  // Resolve banner image for this single article
-  const { data: files } = await supabase.storage
-    .from(BUCKET_NAME)
-    .list(BANNER_FOLDER, { search: id });
-
-  let imageUrl: string | null = null;
-  if (files && files.length > 0) {
-    const matchingFile = files.find((f) => f.name.startsWith(`${id}_banner_`));
-    if (matchingFile) {
-      const { data: urlData } = supabase.storage
-        .from(BUCKET_NAME)
-        .getPublicUrl(`${BANNER_FOLDER}/${matchingFile.name}`);
-      imageUrl = urlData.publicUrl;
-    }
-  }
-
-  return mapArticleRow(data, imageUrl);
+  return mapArticleRow(data);
 };
 
 export const getConsistingCategories = async (): Promise<string[]> => {

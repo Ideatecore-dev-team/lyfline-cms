@@ -1,25 +1,10 @@
 import { supabase } from "../../../supabaseClient";
 import { type Partner } from "../partner";
 import { mapPartnerRow } from "./lookupPartners";
-import { uploadImage } from "../media";
+import { uploadImage, deleteImage } from "../media";
 
-const BUCKET_NAME = "Lyfline Files";
 const LOGO_FOLDER = "Partners/Logo";
 const IMAGES_FOLDER = "Partners/Hospital Images";
-
-const getPathFromUrl = (url: string): string | null => {
-  try {
-    const decodeUrl = decodeURIComponent(url);
-    const searchString = `/public/${BUCKET_NAME}/`;
-    const index = decodeUrl.indexOf(searchString);
-    if (index !== -1) {
-      return decodeUrl.substring(index + searchString.length);
-    }
-  } catch (err) {
-    console.error("Failed to parse URL for deletion:", err);
-  }
-  return null;
-};
 
 export const editPartner = async (
   id: string,
@@ -42,26 +27,24 @@ export const editPartner = async (
   }
 
   let finalLogoUrl = currentPartner.hospital_logo;
-  const storageFilesToDelete: string[] = [];
+  const oldUrlsToDelete: string[] = [];
 
   // 2. Handle Logo Changes
   if (logoFile) {
     // A new logo file was uploaded
-    const fileExt = logoFile.name.split(".").pop();
+    const fileExt = logoFile.name.split(".").pop() || "jpg";
     const fileName = `${id}_logo_${Date.now()}.${fileExt}`;
 
     finalLogoUrl = await uploadImage(logoFile, LOGO_FOLDER, fileName);
 
     // Mark old logo for deletion if it exists
     if (currentPartner.hospital_logo) {
-      const oldLogoPath = getPathFromUrl(currentPartner.hospital_logo);
-      if (oldLogoPath) storageFilesToDelete.push(oldLogoPath);
+      oldUrlsToDelete.push(currentPartner.hospital_logo);
     }
   } else if (logoRemoved) {
     // Logo was removed
     if (currentPartner.hospital_logo) {
-      const oldLogoPath = getPathFromUrl(currentPartner.hospital_logo);
-      if (oldLogoPath) storageFilesToDelete.push(oldLogoPath);
+      oldUrlsToDelete.push(currentPartner.hospital_logo);
     }
     finalLogoUrl = null;
   }
@@ -73,8 +56,7 @@ export const editPartner = async (
   const currentImages: string[] = currentPartner.hospital_images || [];
   currentImages.forEach((imgUrl) => {
     if (!finalImageUrls.includes(imgUrl)) {
-      const path = getPathFromUrl(imgUrl);
-      if (path) storageFilesToDelete.push(path);
+      oldUrlsToDelete.push(imgUrl);
     }
   });
 
@@ -82,7 +64,7 @@ export const editPartner = async (
   if (newImageFiles && newImageFiles.length > 0) {
     for (let i = 0; i < newImageFiles.length; i++) {
       const file = newImageFiles[i];
-      const fileExt = file.name.split(".").pop();
+      const fileExt = file.name.split(".").pop() || "jpg";
       const fileName = `${id}_img_${i}_${Date.now()}.${fileExt}`;
 
       const publicUrl = await uploadImage(file, IMAGES_FOLDER, fileName);
@@ -116,12 +98,9 @@ export const editPartner = async (
   }
 
   // 5. Clean up old storage files after successful DB update
-  if (storageFilesToDelete.length > 0) {
-    const { error: deleteError } = await supabase.storage
-      .from(BUCKET_NAME)
-      .remove(storageFilesToDelete);
-    if (deleteError) {
-      console.warn("Could not clean up some edited storage files:", deleteError.message);
+  if (oldUrlsToDelete.length > 0) {
+    for (const url of oldUrlsToDelete) {
+      await deleteImage(url);
     }
   }
 

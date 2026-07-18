@@ -2,9 +2,8 @@ import { supabase } from "../../../supabaseClient";
 import { type Article } from "../article";
 import { mapArticleRow } from "./lookupArticle";
 import { processContentImages } from "./addArticle";
-import { uploadImage, getStoragePathFromUrl } from "../media";
+import { uploadImage, deleteImage } from "../media";
 
-const BUCKET_NAME = "Lyfline Files";
 const BANNER_FOLDER = "Articles/Banner";
 
 export const editArticle = async (
@@ -18,46 +17,43 @@ export const editArticle = async (
   bannerFile?: File | null,
   bannerRemoved?: boolean
 ): Promise<Article> => {
-  const uploadedPaths: string[] = [];
+  const uploadedUrls: string[] = [];
 
   try {
     // 1. Process inline content images (Base64 -> Supabase Link)
-    const processedContent = await processContentImages(id, articleData.content, uploadedPaths);
+    const processedContent = await processContentImages(id, articleData.content, uploadedUrls);
 
-    // 2. Resolve existing banner
-    const { data: files } = await supabase.storage
-      .from(BUCKET_NAME)
-      .list(BANNER_FOLDER, { search: id });
+    // 2. Resolve existing banner from DB
+    const { data: currentArticle, error: getError } = await supabase
+      .from("articles")
+      .select("imageUrl")
+      .eq("id", id)
+      .single();
 
-    const oldBanners = files ? files.filter((f) => f.name.startsWith(`${id}_banner_`)) : [];
-    const pathsToDelete = oldBanners.map((f) => `${BANNER_FOLDER}/${f.name}`);
-
-    let finalBannerUrl: string | null = null;
-    if (oldBanners.length > 0) {
-      const { data: urlData } = supabase.storage
-        .from(BUCKET_NAME)
-        .getPublicUrl(`${BANNER_FOLDER}/${oldBanners[0].name}`);
-      finalBannerUrl = urlData.publicUrl;
+    if (getError) {
+      console.error("Error fetching article for edit:", getError.message);
+      throw new Error(getError.message);
     }
+
+    let finalBannerUrl: string | null = currentArticle?.imageUrl || null;
 
     // 3. Handle Banner Image Changes
     if (bannerFile) {
-      const fileExt = bannerFile.name.split(".").pop();
+      const fileExt = bannerFile.name.split(".").pop() || "jpg";
       const fileName = `${id}_banner_${Date.now()}.${fileExt}`;
 
-      // Delete old banners from storage first
-      if (pathsToDelete.length > 0) {
-        await supabase.storage.from(BUCKET_NAME).remove(pathsToDelete);
+      // Delete old banner from storage first
+      if (finalBannerUrl) {
+        await deleteImage(finalBannerUrl);
       }
 
       finalBannerUrl = await uploadImage(bannerFile, BANNER_FOLDER, fileName);
-      const path = getStoragePathFromUrl(finalBannerUrl, BUCKET_NAME);
-      if (path) {
-        uploadedPaths.push(path);
+      if (finalBannerUrl) {
+        uploadedUrls.push(finalBannerUrl);
       }
     } else if (bannerRemoved) {
-      if (pathsToDelete.length > 0) {
-        await supabase.storage.from(BUCKET_NAME).remove(pathsToDelete);
+      if (finalBannerUrl) {
+        await deleteImage(finalBannerUrl);
       }
       finalBannerUrl = null;
     }
@@ -82,11 +78,13 @@ export const editArticle = async (
       throw new Error(updateError.message);
     }
 
-    return mapArticleRow(data, finalBannerUrl);
+    return mapArticleRow(data);
   } catch (err) {
     // Clean up any files uploaded during this failed request
-    if (uploadedPaths.length > 0) {
-      await supabase.storage.from(BUCKET_NAME).remove(uploadedPaths);
+    if (uploadedUrls.length > 0) {
+      for (const url of uploadedUrls) {
+        await deleteImage(url);
+      }
     }
     throw err;
   }

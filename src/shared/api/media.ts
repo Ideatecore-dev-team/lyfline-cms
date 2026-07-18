@@ -35,7 +35,7 @@ export const uploadImage = async (file: File | Blob, folder: string, filename?: 
   });
 
   if (response.status === 413) {
-    throw new Error("Ukuran berkas gambar terlalu besar untuk server. Batas maksimal server adalah 1MB (setelah kompresi).");
+    throw new Error("Ukuran berkas gambar terlalu besar untuk server. Batas maksimal server adalah 5MB (setelah kompresi).");
   }
 
   if (!response.ok) {
@@ -51,16 +51,24 @@ export const uploadImage = async (file: File | Blob, folder: string, filename?: 
   return data.url;
 };
 
-export const getStoragePathFromUrl = (url: string, bucketName: string): string | null => {
+export const deleteImage = async (url: string): Promise<void> => {
   try {
-    const decodeUrl = decodeURIComponent(url);
-    const searchString = `/public/${bucketName}/`;
-    const index = decodeUrl.indexOf(searchString);
-    if (index !== -1) {
-      return decodeUrl.substring(index + searchString.length);
+    const response = await fetch(`${API_URL}/api/media`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "x-upload-api-key": import.meta.env.VITE_UPLOAD_API_KEY || "",
+      },
+      body: JSON.stringify({ url }),
+    });
+
+    if (!response.ok) {
+      if (response.status !== 404) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Failed to delete image:", errorData.message || response.status);
+      }
     }
   } catch (err) {
-    console.error("Failed to parse URL:", err);
+    console.error("Failed to delete image:", err);
   }
-  return null;
 };
