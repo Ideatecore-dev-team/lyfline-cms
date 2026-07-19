@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { authApi } from "../../shared/api/auth";
 import Sidebar from "../../widgets/Sidebar";
 import Button from "../../component/button";
+import InputBox from "../../component/inputbox";
 import Notification from "../../component/notification";
 import MediaCard from "../../component/mediaCard";
 import Pagination from "../../component/pagination";
@@ -39,13 +40,22 @@ export default function MediaManagementPage() {
     const [uploadingBatch, setUploadingBatch] = useState(false);
     const [mediaToDelete, setMediaToDelete] = useState<MediaItem | null>(null);
 
+    const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 50;
 
+    const filteredMediaList = useMemo(() => {
+        if (!searchQuery.trim()) return mediaList;
+        const q = searchQuery.toLowerCase();
+        return mediaList.filter((item) =>
+            item.fileName.toLowerCase().includes(q)
+        );
+    }, [mediaList, searchQuery]);
+
     const paginatedMediaList = useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
-        return mediaList.slice(startIndex, startIndex + itemsPerPage);
-    }, [mediaList, currentPage, itemsPerPage]);
+        return filteredMediaList.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredMediaList, currentPage, itemsPerPage]);
 
     const [notification, setNotification] = useState<{
         isOpen: boolean;
@@ -279,30 +289,60 @@ export default function MediaManagementPage() {
                 {/* Divider */}
                 <div className="self-stretch h-px bg-slate-100" />
 
+                {/* Filters */}
+                {mediaList.length > 0 && (
+                    <div className="self-stretch flex flex-col md:flex-row md:items-end items-stretch gap-4 w-full">
+                        <InputBox
+                            label="File Name"
+                            placeholder="Search file name..."
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            containerClassName="w-full max-w-none md:w-1/3 md:min-w-[280px]"
+                        />
+                    </div>
+                )}
+
                 {/* Media Grid / Empty State */}
                 {mediaList.length > 0 ? (
-                    <>
-                        <div className="w-full flex-1 overflow-y-auto overflow-x-visible p-2 pr-1">
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-1">
-                                {paginatedMediaList.map((media) => (
-                                    <MediaCard
-                                        key={media.id}
-                                        imageUrl={media.url}
-                                        fileName={media.fileName}
-                                        fileSize={media.fileSize}
-                                        onDelete={() => setMediaToDelete(media)}
-                                        className="shadow-none! hover:shadow-none! hover:border-primary! hover:outline-1! hover:outline-primary! hover:-outline-offset-1!"
-                                    />
-                                ))}
+                    filteredMediaList.length > 0 ? (
+                        <>
+                            <div className="w-full flex-1 overflow-y-auto overflow-x-visible p-2 pr-1">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-1">
+                                    {paginatedMediaList.map((media) => (
+                                        <MediaCard
+                                            key={media.id}
+                                            imageUrl={media.url}
+                                            fileName={media.fileName}
+                                            fileSize={media.fileSize}
+                                            onDelete={() => setMediaToDelete(media)}
+                                            className="shadow-none! hover:shadow-none! hover:border-primary! hover:outline-1! hover:outline-primary! hover:-outline-offset-1!"
+                                        />
+                                    ))}
+                                </div>
                             </div>
+                            <Pagination
+                                currentPage={currentPage}
+                                totalItems={filteredMediaList.length}
+                                itemsPerPage={itemsPerPage}
+                                onPageChange={setCurrentPage}
+                            />
+                        </>
+                    ) : (
+                        <div className="w-full flex-1 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
+                            <div className="size-16 rounded-full bg-indigo-50 flex items-center justify-center text-primary mb-4">
+                                <Icon name="Image 2" className="size-8 bg-current" />
+                            </div>
+                            <h3 className="text-lg font-medium text-slate-800 font-['Poppins']">
+                                No matching files found
+                            </h3>
+                            <p className="text-sm text-slate-500 max-w-md mt-1 font-sans">
+                                No media assets match your search query "<span className="text-primary font-semibold">{searchQuery}</span>".
+                            </p>
                         </div>
-                        <Pagination
-                            currentPage={currentPage}
-                            totalItems={mediaList.length}
-                            itemsPerPage={itemsPerPage}
-                            onPageChange={setCurrentPage}
-                        />
-                    </>
+                    )
                 ) : (
                     <div className="w-full flex-1 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
                         <div className="size-16 rounded-full bg-indigo-50 flex items-center justify-center text-primary mb-4">

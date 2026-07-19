@@ -3,7 +3,12 @@ import { compressImage } from "../utils/imageCompressor";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-export const uploadImage = async (file: File | Blob, folder: string, filename?: string): Promise<string> => {
+export const uploadImage = async (
+  file: File | Blob,
+  folder: string,
+  filename?: string,
+  preserveName: boolean = false
+): Promise<string> => {
   let fileToUpload = file;
 
   if (file instanceof File) {
@@ -15,9 +20,10 @@ export const uploadImage = async (file: File | Blob, folder: string, filename?: 
   }
 
   const formData = new FormData();
+  let finalName = filename;
+
   if (filename) {
     // If the file extension changed due to webp compression, update filename suffix if present
-    let finalName = filename;
     if (fileToUpload.type === "image/webp" && !filename.endsWith(".webp")) {
       const originalNameWithoutExt = filename.substring(0, filename.lastIndexOf(".")) || filename;
       finalName = `${originalNameWithoutExt}.webp`;
@@ -27,11 +33,32 @@ export const uploadImage = async (file: File | Blob, folder: string, filename?: 
     formData.append("image", fileToUpload);
   }
 
-  const response = await fetch(`${API_URL}/api/media/upload?folder=${encodeURIComponent(folder)}`, {
+  if (preserveName && finalName) {
+    formData.append("preserveName", "true");
+    formData.append("keepOriginalName", "true");
+    formData.append("filename", finalName);
+    formData.append("exactName", "true");
+    formData.append("timestamp", "false");
+  }
+
+  let queryUrl = `${API_URL}/api/media/upload?folder=${encodeURIComponent(folder)}`;
+  if (preserveName && finalName) {
+    queryUrl += `&preserveName=true&keepOriginalName=true&filename=${encodeURIComponent(finalName)}&timestamp=false&exact=true`;
+  }
+
+  const headers: Record<string, string> = {
+    "x-upload-api-key": import.meta.env.VITE_UPLOAD_API_KEY || "",
+  };
+
+  if (preserveName && finalName) {
+    headers["x-preserve-name"] = "true";
+    headers["x-keep-original-name"] = "true";
+    headers["x-filename"] = encodeURIComponent(finalName);
+  }
+
+  const response = await fetch(queryUrl, {
     method: "POST",
-    headers: {
-      "x-upload-api-key": import.meta.env.VITE_UPLOAD_API_KEY || "",
-    },
+    headers,
     body: formData,
   });
 
@@ -112,10 +139,23 @@ export const processZipFile = async (
   }
 
   const results: BatchUploadResultItem[] = [];
+  const nameCountMap = new Map<string, number>();
 
   for (let i = 0; i < imageEntries.length; i++) {
     const entry = imageEntries[i];
-    const cleanFileName = entry.name.split("/").pop() || entry.name;
+    const entryName = entry.name.split("/").pop() || entry.name;
+    // Replace em-dash —, en-dash –, and non-standard dashes with standard '-'
+    const rawFileName = entryName.replace(/[\u2013\u2014]/g, "-");
+
+    // Generate unique name if duplicates exist in batch: abc.webp -> abc.webp, 2nd abc.webp -> abc-1.webp
+    const extIndex = rawFileName.lastIndexOf(".");
+    const baseName = extIndex !== -1 ? rawFileName.substring(0, extIndex) : rawFileName;
+    const ext = extIndex !== -1 ? rawFileName.substring(extIndex) : "";
+
+    const count = nameCountMap.get(baseName.toLowerCase()) || 0;
+    nameCountMap.set(baseName.toLowerCase(), count + 1);
+
+    const cleanFileName = count === 0 ? rawFileName : `${baseName}-${count}${ext}`;
 
     if (onProgress) {
       onProgress({
@@ -128,7 +168,7 @@ export const processZipFile = async (
     const blob = await entry.file.async("blob");
     const extractedFile = new File([blob], cleanFileName, { type: blob.type || "image/jpeg" });
 
-    const uploadedUrl = await uploadImage(extractedFile, folder, cleanFileName);
+    const uploadedUrl = await uploadImage(extractedFile, folder, cleanFileName, true);
 
     const formattedSize = blob.size > 1024 * 1024
       ? `${(blob.size / (1024 * 1024)).toFixed(2)} MB`
