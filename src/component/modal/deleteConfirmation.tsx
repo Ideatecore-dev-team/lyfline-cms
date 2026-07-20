@@ -45,7 +45,7 @@ export default function DeleteConfirmationModal({
         >
             <div
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-[500px] p-6 bg-white rounded-[32px] outline -outline-offset-1 outline-slate-200 inline-flex flex-col justify-start items-start gap-6 shadow-2xl animate-scale-in"
+                className="w-full max-w-125 p-6 bg-white rounded-4xl outline -outline-offset-1 outline-slate-200 inline-flex flex-col justify-start items-start gap-6 shadow-2xl animate-scale-in"
             >
                 {/* Title Bar */}
                 <div className="self-stretch inline-flex justify-between items-start">

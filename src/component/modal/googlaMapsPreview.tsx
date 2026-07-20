@@ -147,7 +147,7 @@ export default function GooglaMapsPreviewModal({
         >
             <div
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-[600px] p-6 bg-white rounded-[32px] outline -outline-offset-1 outline-slate-200 inline-flex flex-col justify-start items-start gap-6 shadow-2xl animate-scale-in"
+                className="w-full max-w-150 p-6 bg-white rounded-4xl outline -outline-offset-1 outline-slate-200 inline-flex flex-col justify-start items-start gap-6 shadow-2xl animate-scale-in"
             >
                 {/* Title Bar */}
                 <div className="self-stretch inline-flex justify-between items-start">
@@ -180,7 +180,7 @@ export default function GooglaMapsPreviewModal({
                 <div className="self-stretch h-px bg-slate-200" />
 
                 {/* Preview Content */}
-                <div className="self-stretch flex flex-col items-center justify-center min-h-[350px] bg-indigo-50/50 rounded-2xl border border-slate-100 p-2 overflow-hidden relative">
+                <div className="self-stretch flex flex-col items-center justify-center min-h-87.5 bg-indigo-50/50 rounded-2xl border border-slate-100 p-2 overflow-hidden relative">
                     {resolving ? (
                         <div className="flex flex-col items-center justify-center gap-4 text-center p-8">
                             <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -198,7 +198,7 @@ export default function GooglaMapsPreviewModal({
                                 className="size-16 bg-red-500/80 mask-contain mask-no-repeat mask-center"
                                 aria-hidden="true"
                             />
-                            <div className="text-slate-600 text-sm font-medium font-sans max-w-[280px]">
+                            <div className="text-slate-600 text-sm font-medium font-sans max-w-70">
                                 {resolveError}
                             </div>
                         </div>
@@ -224,7 +224,7 @@ export default function GooglaMapsPreviewModal({
                                 className="size-16 bg-primary/60 mask-contain mask-no-repeat mask-center"
                                 aria-hidden="true"
                             />
-                            <div className="text-slate-600 text-sm font-medium font-sans max-w-[280px]">
+                            <div className="text-slate-600 text-sm font-medium font-sans max-w-70">
                                 Please input an embed URL to see the preview
                             </div>
                         </div>
