@@ -285,20 +285,18 @@ export default function MediaManagementPage() {
                 <div className="self-stretch h-px bg-slate-100" />
 
                 {/* Filters */}
-                {mediaList.length > 0 && (
-                    <div className="self-stretch flex flex-col md:flex-row md:items-end items-stretch gap-4 w-full">
-                        <InputBox
-                            label="File Name"
-                            placeholder="Search file name..."
-                            value={searchQuery}
-                            onChange={(e) => {
-                                setSearchQuery(e.target.value);
-                                setCurrentPage(1);
-                            }}
-                            containerClassName="w-full max-w-none md:w-1/3 md:min-w-[280px]"
-                        />
-                    </div>
-                )}
+                <div className="self-stretch flex flex-col md:flex-row md:items-end items-stretch gap-4 w-full">
+                    <InputBox
+                        label="File Name"
+                        placeholder="Search file name..."
+                        value={searchQuery}
+                        onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setCurrentPage(1);
+                        }}
+                        containerClassName="w-full max-w-none md:w-1/3 md:min-w-[280px]"
+                    />
+                </div>
 
                 {mediaList.length > 0 ? (
                     <>
@@ -328,9 +326,15 @@ export default function MediaManagementPage() {
                         <div className="size-16 rounded-full bg-indigo-50 flex items-center justify-center text-primary mb-4">
                             <Icon name="Image 2" className="size-8 bg-current" />
                         </div>
-                        <p className="text-sm text-slate-500 max-w-md mt-1 font-sans">
-                            Use <span className="text-primary font-semibold">Upload Image</span> or <span className="text-primary font-semibold">Upload Batch</span> above to begin migrating and organizing your media assets.
-                        </p>
+                        {searchQuery ? (
+                            <p className="text-sm text-slate-500 max-w-md mt-1 font-sans">
+                                No media assets found matching "<span className="text-slate-800 font-semibold">{searchQuery}</span>". Try clearing or changing your search query.
+                            </p>
+                        ) : (
+                            <p className="text-sm text-slate-500 max-w-md mt-1 font-sans">
+                                Use <span className="text-primary font-semibold">Upload Image</span> or <span className="text-primary font-semibold">Upload Batch</span> above to begin migrating and organizing your media assets.
+                            </p>
+                        )}
                     </div>
                 )}
             </div>
