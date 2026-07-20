@@ -67,8 +67,8 @@ export default function ManageDoctorsForm() {
     useEffect(() => {
         const loadInitialData = async () => {
             try {
-                const data = await getPartners();
-                setPartners(data);
+                const res = await getPartners({ all: true });
+                setPartners(res.data);
             } catch (err) {
                 console.error("Error loading partners for hospitals dropdown:", err);
             }
@@ -199,7 +199,7 @@ export default function ManageDoctorsForm() {
     return (
         <div className="w-full px-0 py-4 lg:py-8 flex flex-col lg:flex-row justify-center items-stretch lg:items-start gap-6 bg-background">
             {/* Left Sidebar */}
-            <div className="hidden lg:block shrink-0">
+            <div className="hidden lg:block shrink-0 sticky top-0 self-start z-10">
                 <Sidebar minimal />
             </div>
 

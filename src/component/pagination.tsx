@@ -27,19 +27,19 @@ export default function Pagination({
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
   const pageNumbers = useMemo(() => {
-    const pages: number[] = [];
-    const maxVisible = 5;
-    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    const end = Math.min(totalPages, start + maxVisible - 1);
-
-    if (end - start + 1 < maxVisible) {
-      start = Math.max(1, end - maxVisible + 1);
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
 
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
+    if (currentPage <= 4) {
+      return [1, 2, 3, 4, 5, "...", totalPages];
     }
-    return pages;
+
+    if (currentPage >= totalPages - 3) {
+      return [1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+
+    return [1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages];
   }, [currentPage, totalPages]);
 
   const startIndex = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
@@ -68,20 +68,33 @@ export default function Pagination({
         </button>
 
         {/* Page numbers */}
-        {pageNumbers.map((page) => (
-          <button
-            key={page}
-            type="button"
-            onClick={() => onPageChange(page)}
-            className={`size-9 rounded-lg border text-sm font-medium transition-all cursor-pointer flex items-center justify-center active:scale-95 ${
-              page === currentPage
-                ? "border-primary bg-linear-to-r from-primary to-primary-hover text-white shadow-sm"
-                : "border-slate-200 hover:bg-slate-50 text-slate-600"
-            }`}
-          >
-            {page}
-          </button>
-        ))}
+        {pageNumbers.map((page, idx) => {
+          if (page === "...") {
+            return (
+              <span
+                key={`ellipsis-${idx}`}
+                className="size-9 flex items-center justify-center text-slate-400 text-sm font-medium select-none"
+              >
+                ...
+              </span>
+            );
+          }
+
+          return (
+            <button
+              key={page}
+              type="button"
+              onClick={() => onPageChange(page as number)}
+              className={`size-9 rounded-lg border text-sm font-medium transition-all cursor-pointer flex items-center justify-center active:scale-95 ${
+                page === currentPage
+                  ? "border-primary bg-linear-to-r from-primary to-primary-hover text-white shadow-sm"
+                  : "border-slate-200 hover:bg-slate-50 text-slate-600"
+              }`}
+            >
+              {page}
+            </button>
+          );
+        })}
 
         {/* Next Button */}
         <button

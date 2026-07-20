@@ -104,7 +104,7 @@ export default function PromoManagementPage() {
     return (
         <div className="w-full px-0 py-4 lg:py-8 flex flex-col lg:flex-row justify-center items-stretch lg:items-start gap-6 bg-background">
             {/* Left Sidebar */}
-            <div className="hidden lg:block shrink-0">
+            <div className="hidden lg:block shrink-0 sticky top-0 self-start z-10">
                 <Sidebar minimal />
             </div>
 

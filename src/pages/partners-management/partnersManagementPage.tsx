@@ -25,6 +25,7 @@ function PartnersManagementPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const [partners, setPartners] = useState<Partner[]>([]);
+    const [totalPartners, setTotalPartners] = useState(0);
     const [countries, setCountries] = useState<string[]>([]);
     const [currentUser] = useState(() => authApi.getCurrentUser());
     const [loading, setLoading] = useState(true);
@@ -56,21 +57,27 @@ function PartnersManagementPage() {
     // Form states
     const [partnerToDelete, setPartnerToDelete] = useState<Partner | null>(null);
 
-    const fetchPartners = useCallback(async (nameFilter = filterName, countryFilter = filterCountry) => {
+    const fetchPartners = useCallback(async (
+        page: number,
+        nameFilter: string,
+        countryFilter: string
+    ) => {
         setLoading(true);
         try {
-            const data = await getPartners({
+            const res = await getPartners({
                 hospitalName: nameFilter,
                 country: countryFilter,
+                page,
+                limit: itemsPerPage,
             });
-            setPartners(data);
-            setCurrentPage(1);
+            setPartners(res.data);
+            setTotalPartners(res.meta.total);
         } catch (err) {
             console.error("Error loading partners", err);
         } finally {
             setLoading(false);
         }
-    }, [filterName, filterCountry]);
+    }, []);
 
     const loadCountries = async () => {
         try {
@@ -87,11 +94,16 @@ function PartnersManagementPage() {
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
-            fetchPartners(filterName, filterCountry);
+            setCurrentPage(1);
+            fetchPartners(1, filterName, filterCountry);
         }, 300);
 
         return () => clearTimeout(delayDebounceFn);
     }, [filterName, filterCountry, fetchPartners]);
+
+    useEffect(() => {
+        fetchPartners(currentPage, filterName, filterCountry);
+    }, [currentPage, filterName, filterCountry, fetchPartners]);
 
     useEffect(() => {
         if (location.state?.successMessage) {
@@ -113,7 +125,7 @@ function PartnersManagementPage() {
             // Refresh list and countries list
             const countriesList = await getConsistingCountries();
             setCountries(countriesList);
-            fetchPartners(filterName, filterCountry);
+            fetchPartners(currentPage, filterName, filterCountry);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : String(err);
             showNotif("Failed to delete partner: " + errorMessage, "error");
@@ -140,7 +152,7 @@ function PartnersManagementPage() {
     return (
         <div className="w-full px-0 py-4 lg:py-8 flex flex-col lg:flex-row justify-center items-stretch lg:items-start gap-6 bg-background">
             {/* Left Sidebar */}
-            <div className="hidden lg:block shrink-0">
+            <div className="hidden lg:block shrink-0 sticky top-0 self-start z-10">
                 <Sidebar minimal />
             </div>
 
@@ -210,23 +222,23 @@ function PartnersManagementPage() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex-1 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start">
-                                    <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden">
-                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
+                                <div className="flex-1 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start min-w-0">
+                                    <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden min-w-0">
+                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins'] truncate">
                                             Hospital Name
                                         </div>
                                     </div>
                                 </div>
-                                <div className="w-64 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start">
-                                    <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden">
-                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
+                                <div className="w-64 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start min-w-0">
+                                    <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden min-w-0">
+                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins'] truncate">
                                             City
                                         </div>
                                     </div>
                                 </div>
-                                <div className="w-44 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start">
-                                    <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden">
-                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
+                                <div className="w-44 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start min-w-0">
+                                    <div className="self-stretch flex-1 px-3 py-4 inline-flex justify-start items-center gap-2 overflow-hidden min-w-0">
+                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins'] truncate">
                                             Country
                                         </div>
                                     </div>
@@ -250,7 +262,7 @@ function PartnersManagementPage() {
                                     No partners found.
                                 </div>
                             ) : (
-                                partners.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((partner, index) => (
+                                partners.map((partner, index) => (
                                     <div
                                         key={partner.id}
                                         className="self-stretch bg-white/0 inline-flex justify-start items-center overflow-hidden border-b border-slate-100 hover:bg-slate-50/40 transition-colors"
@@ -262,23 +274,32 @@ function PartnersManagementPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex-1 self-stretch inline-flex flex-col justify-center items-start">
-                                            <div className="self-stretch flex-1 p-3 flex flex-col justify-center items-start overflow-hidden">
-                                                <div className="self-stretch justify-start text-black/90 text-sm font-normal font-['Poppins']">
+                                        <div className="flex-1 self-stretch inline-flex flex-col justify-center items-start min-w-0">
+                                            <div className="self-stretch flex-1 p-3 flex flex-col justify-center items-start overflow-hidden min-w-0">
+                                                <div
+                                                    className="self-stretch justify-start text-black/90 text-sm font-normal font-['Poppins'] truncate"
+                                                    title={partner.hospitalName}
+                                                >
                                                     {partner.hospitalName}
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="w-64 self-stretch inline-flex flex-col justify-center items-start">
-                                            <div className="self-stretch flex-1 p-3 flex flex-col justify-center items-start overflow-hidden">
-                                                <div className="self-stretch justify-start text-neutral-900 text-sm font-normal font-['Poppins']">
+                                        <div className="w-64 self-stretch inline-flex flex-col justify-center items-start min-w-0">
+                                            <div className="self-stretch flex-1 p-3 flex flex-col justify-center items-start overflow-hidden min-w-0">
+                                                <div
+                                                    className="self-stretch justify-start text-neutral-900 text-sm font-normal font-['Poppins'] truncate"
+                                                    title={partner.city}
+                                                >
                                                     {partner.city}
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="w-44 self-stretch inline-flex flex-col justify-center items-start">
-                                            <div className="self-stretch flex-1 p-3 flex flex-col justify-center items-start overflow-hidden">
-                                                <div className="self-stretch justify-start text-neutral-900 text-sm font-normal font-['Poppins']">
+                                        <div className="w-44 self-stretch inline-flex flex-col justify-center items-start min-w-0">
+                                            <div className="self-stretch flex-1 p-3 flex flex-col justify-center items-start overflow-hidden min-w-0">
+                                                <div
+                                                    className="self-stretch justify-start text-neutral-900 text-sm font-normal font-['Poppins'] truncate"
+                                                    title={partner.country}
+                                                >
                                                     {partner.country}
                                                 </div>
                                             </div>
@@ -310,7 +331,7 @@ function PartnersManagementPage() {
 
                 <Pagination
                     currentPage={currentPage}
-                    totalItems={partners.length}
+                    totalItems={totalPartners}
                     itemsPerPage={itemsPerPage}
                     onPageChange={setCurrentPage}
                 />

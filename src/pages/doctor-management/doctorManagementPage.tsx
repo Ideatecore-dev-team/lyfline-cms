@@ -25,6 +25,7 @@ function DoctorManagementPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const [doctors, setDoctors] = useState<Doctor[]>([]);
+    const [totalDoctors, setTotalDoctors] = useState(0);
     const [hospitals, setHospitals] = useState<string[]>([]);
     const [countries, setCountries] = useState<string[]>([]);
     const [currentUser] = useState(() => authApi.getCurrentUser());
@@ -58,22 +59,29 @@ function DoctorManagementPage() {
     // Form states
     const [doctorToDelete, setDoctorToDelete] = useState<Doctor | null>(null);
 
-    const fetchDoctors = useCallback(async (nameFilter = filterName, hospitalFilter = filterHospital, countryFilter = filterCountry) => {
+    const fetchDoctors = useCallback(async (
+        page: number,
+        nameFilter: string,
+        hospitalFilter: string,
+        countryFilter: string
+    ) => {
         setLoading(true);
         try {
-            const data = await getDoctors({
+            const res = await getDoctors({
                 doctorName: nameFilter,
                 hospital: hospitalFilter,
                 country: countryFilter,
+                page,
+                limit: itemsPerPage,
             });
-            setDoctors(data);
-            setCurrentPage(1);
+            setDoctors(res.data);
+            setTotalDoctors(res.meta.total);
         } catch (err) {
             console.error("Error loading doctors", err);
         } finally {
             setLoading(false);
         }
-    }, [filterName, filterHospital, filterCountry]);
+    }, []);
 
     const loadFilterOptions = async () => {
         try {
@@ -94,11 +102,16 @@ function DoctorManagementPage() {
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
-            fetchDoctors(filterName, filterHospital, filterCountry);
+            setCurrentPage(1);
+            fetchDoctors(1, filterName, filterHospital, filterCountry);
         }, 300);
 
         return () => clearTimeout(delayDebounceFn);
     }, [filterName, filterHospital, filterCountry, fetchDoctors]);
+
+    useEffect(() => {
+        fetchDoctors(currentPage, filterName, filterHospital, filterCountry);
+    }, [currentPage, filterName, filterHospital, filterCountry, fetchDoctors]);
 
     useEffect(() => {
         if (location.state?.successMessage) {
@@ -119,7 +132,7 @@ function DoctorManagementPage() {
             showNotif(`Doctor "${doctorToDelete.doctorName}" deleted successfully!`, "success");
             // Refresh list and dropdowns
             loadFilterOptions();
-            fetchDoctors(filterName, filterHospital, filterCountry);
+            fetchDoctors(currentPage, filterName, filterHospital, filterCountry);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : String(err);
             showNotif("Failed to delete doctor: " + errorMessage, "error");
@@ -145,7 +158,7 @@ function DoctorManagementPage() {
     return (
         <div className="w-full px-0 py-4 lg:py-8 flex flex-col lg:flex-row justify-center items-stretch lg:items-start gap-6 bg-background">
             {/* Left Sidebar */}
-            <div className="hidden lg:block shrink-0">
+            <div className="hidden lg:block shrink-0 sticky top-0 self-start z-10">
                 <Sidebar minimal />
             </div>
 
@@ -227,23 +240,23 @@ function DoctorManagementPage() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex-1 flex flex-col justify-center items-start">
-                                    <div className="w-full flex-1 px-3 py-4 flex justify-start items-center gap-2 overflow-hidden">
-                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
+                                <div className="flex-1 flex flex-col justify-center items-start min-w-0">
+                                    <div className="w-full flex-1 px-3 py-4 flex justify-start items-center gap-2 overflow-hidden min-w-0">
+                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins'] truncate">
                                             Doctor Name
                                         </div>
                                     </div>
                                 </div>
-                                <div className="w-64 flex flex-col justify-center items-start shrink-0">
-                                    <div className="w-full flex-1 px-3 py-4 flex justify-start items-center gap-2 overflow-hidden">
-                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
+                                <div className="w-64 flex flex-col justify-center items-start shrink-0 min-w-0">
+                                    <div className="w-full flex-1 px-3 py-4 flex justify-start items-center gap-2 overflow-hidden min-w-0">
+                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins'] truncate">
                                             Hospital
                                         </div>
                                     </div>
                                 </div>
-                                <div className="w-44 flex flex-col justify-center items-start shrink-0">
-                                    <div className="w-full flex-1 px-3 py-4 flex justify-start items-center gap-2 overflow-hidden">
-                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
+                                <div className="w-44 flex flex-col justify-center items-start shrink-0 min-w-0">
+                                    <div className="w-full flex-1 px-3 py-4 flex justify-start items-center gap-2 overflow-hidden min-w-0">
+                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins'] truncate">
                                             Country
                                         </div>
                                     </div>
@@ -267,7 +280,7 @@ function DoctorManagementPage() {
                                     No doctors found.
                                 </div>
                             ) : (
-                                doctors.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((doctor, index) => (
+                                doctors.map((doctor, index) => (
                                     <div
                                         key={doctor.id}
                                         className="w-full bg-white/0 flex justify-start items-stretch overflow-hidden border-b border-slate-100 hover:bg-slate-50/40 transition-colors"
@@ -279,23 +292,32 @@ function DoctorManagementPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex-1 flex flex-col justify-center items-start">
-                                            <div className="w-full flex-1 p-3 flex flex-col justify-center items-start overflow-hidden">
-                                                <div className="w-full justify-start text-black/90 text-sm font-normal font-['Poppins']">
+                                        <div className="flex-1 flex flex-col justify-center items-start min-w-0">
+                                            <div className="w-full flex-1 p-3 flex flex-col justify-center items-start overflow-hidden min-w-0">
+                                                <div
+                                                    className="w-full justify-start text-black/90 text-sm font-normal font-['Poppins'] truncate"
+                                                    title={doctor.doctorName}
+                                                >
                                                     {doctor.doctorName}
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="w-64 flex flex-col justify-center items-start shrink-0">
-                                            <div className="w-full flex-1 p-3 flex flex-col justify-center items-start overflow-hidden">
-                                                <div className="w-full justify-start text-neutral-900 text-sm font-normal font-['Poppins']">
+                                        <div className="w-64 flex flex-col justify-center items-start shrink-0 min-w-0">
+                                            <div className="w-full flex-1 p-3 flex flex-col justify-center items-start overflow-hidden min-w-0">
+                                                <div
+                                                    className="w-full justify-start text-neutral-900 text-sm font-normal font-['Poppins'] truncate"
+                                                    title={doctor.hospital}
+                                                >
                                                     {doctor.hospital}
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="w-44 flex flex-col justify-center items-start shrink-0">
-                                            <div className="w-full flex-1 p-3 flex flex-col justify-center items-start overflow-hidden">
-                                                <div className="w-full justify-start text-neutral-900 text-sm font-normal font-['Poppins']">
+                                        <div className="w-44 flex flex-col justify-center items-start shrink-0 min-w-0">
+                                            <div className="w-full flex-1 p-3 flex flex-col justify-center items-start overflow-hidden min-w-0">
+                                                <div
+                                                    className="w-full justify-start text-neutral-900 text-sm font-normal font-['Poppins'] truncate"
+                                                    title={doctor.country}
+                                                >
                                                     {doctor.country}
                                                 </div>
                                             </div>
@@ -327,7 +349,7 @@ function DoctorManagementPage() {
 
                 <Pagination
                     currentPage={currentPage}
-                    totalItems={doctors.length}
+                    totalItems={totalDoctors}
                     itemsPerPage={itemsPerPage}
                     onPageChange={setCurrentPage}
                 />

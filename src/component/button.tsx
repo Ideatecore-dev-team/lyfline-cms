@@ -4,10 +4,13 @@ export type ButtonVariant =
   | "primary"
   | "outline-white"
   | "outline-primary"
+  | "outline-danger"
   | "slate-primary"
   | "ghost-primary"
   | "ghost-white"
-  | "ghost-black";
+  | "ghost-black"
+  | "ghost-danger"
+  | "danger";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   text: string;
@@ -20,10 +23,13 @@ const variantClasses: Record<ButtonVariant, string> = {
   primary: "bg-linear-to-r from-[#3F71B7] to-[#3365AC] text-white hover:opacity-95",
   "outline-white": "bg-transparent text-white outline outline-2 outline-offset-[-2px] outline-white hover:bg-white/10",
   "outline-primary": "bg-transparent text-[#3F71B7] outline outline-2 outline-offset-[-2px] outline-[#3F71B7] hover:bg-[#3F71B7]/10",
+  "outline-danger": "bg-transparent text-rose-600 outline outline-2 outline-offset-[-2px] outline-rose-600 hover:bg-rose-50",
   "slate-primary": "bg-linear-to-r from-[#3F71B7] to-[#3365AC] text-white hover:opacity-95",
   "ghost-primary": "bg-transparent text-[#3F71B7] hover:bg-[#3F71B7]/10",
   "ghost-white": "bg-transparent text-white hover:bg-white/10",
   "ghost-black": "bg-transparent text-black hover:bg-black/10",
+  "ghost-danger": "bg-transparent text-rose-600 hover:bg-rose-50",
+  danger: "bg-rose-600 text-white hover:bg-rose-700",
 };
 
 export default function Button({
