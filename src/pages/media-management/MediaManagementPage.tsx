@@ -7,7 +7,7 @@ import Notification from "../../component/notification";
 import MediaCard from "../../component/mediaCard";
 import Pagination from "../../component/pagination";
 import DeleteConfirmationModal from "../../component/modal/deleteConfirmation";
-import { uploadImage, deleteImage, processZipFile } from "../../shared/api/media";
+import { uploadImage, deleteImage, processZipFile, fetchMediaList } from "../../shared/api/media";
 
 const Icon = ({ name, className = "size-5 bg-current" }: { name: string; className?: string }) => (
     <span
@@ -75,19 +75,36 @@ export default function MediaManagementPage() {
         });
     };
 
-    // Load stored media items from local storage on mount
+    // Load media items from VPS server API on mount (with local storage fallback)
     useEffect(() => {
-        try {
-            const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                if (Array.isArray(parsed)) {
-                    setMediaList(parsed);
+        let isMounted = true;
+        const loadMedia = async () => {
+            const list = await fetchMediaList("media");
+            if (isMounted && list.length > 0) {
+                setMediaList(list);
+                try {
+                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
+                } catch (err) {
+                    console.error("Failed to sync media items to localStorage:", err);
+                }
+            } else if (isMounted) {
+                try {
+                    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+                    if (stored) {
+                        const parsed = JSON.parse(stored);
+                        if (Array.isArray(parsed)) {
+                            setMediaList(parsed);
+                        }
+                    }
+                } catch (err) {
+                    console.error("Failed to load local media items:", err);
                 }
             }
-        } catch (err) {
-            console.error("Failed to load local media items:", err);
-        }
+        };
+        loadMedia();
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     // Save media list to local storage

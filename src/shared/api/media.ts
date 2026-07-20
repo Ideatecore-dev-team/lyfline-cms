@@ -101,6 +101,52 @@ export const deleteImage = async (url: string): Promise<void> => {
   }
 };
 
+export const fetchMediaList = async (folder: string = "media"): Promise<Array<{
+  id: string;
+  url: string;
+  fileName: string;
+  fileSize: string;
+  uploadedAt: string;
+}>> => {
+  try {
+    const response = await fetch(`${API_URL}/api/media?folder=${encodeURIComponent(folder)}`, {
+      method: "GET",
+      headers: {
+        "x-upload-api-key": import.meta.env.VITE_UPLOAD_API_KEY || "",
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const rawList = Array.isArray(data) ? data : Array.isArray(data.files) ? data.files : null;
+      if (rawList) {
+        return rawList.map((item: any, idx: number) => ({
+          id: item.id || `${idx}_${Date.now()}`,
+          url: typeof item === "string" ? item : (item.url || item.path || ""),
+          fileName: typeof item === "string" ? (item.split("/").pop() || item) : (item.fileName || item.filename || item.name || "image.webp"),
+          fileSize: item.fileSize || item.size || "Unknown",
+          uploadedAt: item.uploadedAt || item.createdAt || new Date().toISOString(),
+        }));
+      }
+    }
+  } catch (err) {
+    console.warn("Could not fetch remote media list from server, using local storage fallback:", err);
+  }
+
+  // Fallback to local storage
+  try {
+    const stored = localStorage.getItem("lyfline_media_items");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (err) {
+    console.error("Failed to parse local storage media items:", err);
+  }
+
+  return [];
+};
+
 export interface BatchUploadProgress {
   current: number;
   total: number;

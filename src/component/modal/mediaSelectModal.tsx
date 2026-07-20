@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import MediaCard from "../mediaCard";
 import Pagination from "../pagination";
 import InputBox from "../inputbox";
+import { fetchMediaList } from "../../shared/api/media";
 
 const Icon = ({ name, className = "size-5 bg-current" }: { name: string; className?: string }) => (
   <span
@@ -41,19 +42,31 @@ export default function MediaSelectModal({
 
   useEffect(() => {
     if (isOpen) {
-      try {
-        const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) {
-            setMediaList(parsed);
+      let isMounted = true;
+      const loadMedia = async () => {
+        const list = await fetchMediaList("media");
+        if (isMounted && list.length > 0) {
+          setMediaList(list);
+        } else if (isMounted) {
+          try {
+            const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              if (Array.isArray(parsed)) {
+                setMediaList(parsed);
+              }
+            }
+          } catch (err) {
+            console.error("Failed to load media library items:", err);
           }
         }
-      } catch (err) {
-        console.error("Failed to load media library items:", err);
-      }
+      };
+      loadMedia();
       setSearchQuery("");
       setCurrentPage(1);
+      return () => {
+        isMounted = false;
+      };
     }
   }, [isOpen]);
 
