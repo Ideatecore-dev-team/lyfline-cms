@@ -67,8 +67,8 @@ export default function ManageDoctorsForm() {
     useEffect(() => {
         const loadInitialData = async () => {
             try {
-                const data = await getPartners();
-                setPartners(data);
+                const res = await getPartners({ all: true });
+                setPartners(res.data);
             } catch (err) {
                 console.error("Error loading partners for hospitals dropdown:", err);
             }

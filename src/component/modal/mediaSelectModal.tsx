@@ -44,7 +44,8 @@ export default function MediaSelectModal({
     if (isOpen) {
       let isMounted = true;
       const loadMedia = async () => {
-        const list = await fetchMediaList("media");
+        const res = await fetchMediaList("media");
+        const list = Array.isArray(res) ? res : res.data || [];
         if (isMounted && list.length > 0) {
           setMediaList(list);
         } else if (isMounted) {

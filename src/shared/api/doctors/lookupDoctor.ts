@@ -37,19 +37,51 @@ export const mapDoctorRow = (row: DoctorRow, imageUrl: string | null): Doctor =>
   description: row.description || "",
 });
 
-export const getDoctors = async (filters?: {
+export interface PaginatedDoctorsResult {
+  data: Doctor[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export const getDoctors = async (options?: {
   doctorName?: string;
   hospital?: string;
   speciality?: string;
   country?: string;
-}): Promise<Doctor[]> => {
-  let query = supabase.from("doctors").select("*, partners(*)");
+  page?: number;
+  limit?: number;
+  all?: boolean;
+}): Promise<PaginatedDoctorsResult> => {
+  const isAll = options?.all === true;
+  const page = options?.page ?? 1;
+  const limit = isAll ? 10000 : (options?.limit ?? 10);
 
-  if (filters?.doctorName?.trim()) {
-    query = query.ilike("doctor_name", `%${filters.doctorName.trim()}%`);
+  const selectClause = (options?.hospital || options?.country) ? "*, partners!inner(*)" : "*, partners(*)";
+  let query = supabase.from("doctors").select(selectClause, { count: "exact" });
+
+  if (options?.doctorName?.trim()) {
+    query = query.ilike("doctor_name", `%${options.doctorName.trim()}%`);
+  }
+  if (options?.hospital) {
+    query = query.eq("partners.hospital_name", options.hospital);
+  }
+  if (options?.country) {
+    query = query.eq("partners.country", options.country);
   }
 
-  const { data, error } = await query.order("created_at", { ascending: false });
+  query = query.order("created_at", { ascending: false });
+
+  if (!isAll) {
+    const from = (page - 1) * limit;
+    const to = page * limit - 1;
+    query = query.range(from, to);
+  }
+
+  const { data, count, error } = await query;
 
   if (error) {
     console.error("Error looking up doctors:", error.message);
@@ -77,22 +109,26 @@ export const getDoctors = async (filters?: {
 
   let results = (data || []).map((row) => mapDoctorRow(row, imageMap[row.id] || null));
 
-  // Apply filters that require joined fields (if filters are set)
-  if (filters?.hospital) {
-    results = results.filter((d) => d.hospital === filters.hospital);
-  }
-  if (filters?.country) {
-    results = results.filter((d) => d.country === filters.country);
-  }
-  if (filters?.speciality) {
+  if (options?.speciality) {
     results = results.filter(
       (d) =>
-        d.speciality.toLowerCase() === filters.speciality!.toLowerCase() ||
-        d.specialities?.some((s) => s.toLowerCase() === filters.speciality!.toLowerCase())
+        d.speciality.toLowerCase() === options.speciality!.toLowerCase() ||
+        d.specialities?.some((s) => s.toLowerCase() === options.speciality!.toLowerCase())
     );
   }
 
-  return results;
+  const total = count || 0;
+  const totalPages = Math.ceil(total / limit) || 1;
+
+  return {
+    data: results,
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages,
+    },
+  };
 };
 
 export const getDoctorById = async (id: string): Promise<Doctor | null> => {

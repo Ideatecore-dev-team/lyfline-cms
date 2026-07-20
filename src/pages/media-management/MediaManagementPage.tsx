@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { authApi } from "../../shared/api/auth";
 import Sidebar from "../../widgets/Sidebar";
 import Button from "../../component/button";
@@ -42,20 +42,8 @@ export default function MediaManagementPage() {
 
     const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
     const itemsPerPage = 50;
-
-    const filteredMediaList = useMemo(() => {
-        if (!searchQuery.trim()) return mediaList;
-        const q = searchQuery.toLowerCase();
-        return mediaList.filter((item) =>
-            item.fileName.toLowerCase().includes(q)
-        );
-    }, [mediaList, searchQuery]);
-
-    const paginatedMediaList = useMemo(() => {
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        return filteredMediaList.slice(startIndex, startIndex + itemsPerPage);
-    }, [filteredMediaList, currentPage, itemsPerPage]);
 
     const [notification, setNotification] = useState<{
         isOpen: boolean;
@@ -75,37 +63,27 @@ export default function MediaManagementPage() {
         });
     };
 
-    // Load media items from VPS server API on mount (with local storage fallback)
+    // Load media items from VPS server API with server-side pagination
+    const loadMedia = useCallback(async () => {
+        const res = await fetchMediaList({
+            folder: "media",
+            page: currentPage,
+            limit: itemsPerPage,
+            search: searchQuery,
+        });
+
+        if ("data" in res && "meta" in res) {
+            setMediaList(res.data);
+            setTotalItems(res.meta.total);
+        } else if (Array.isArray(res)) {
+            setMediaList(res);
+            setTotalItems(res.length);
+        }
+    }, [currentPage, itemsPerPage, searchQuery]);
+
     useEffect(() => {
-        let isMounted = true;
-        const loadMedia = async () => {
-            const list = await fetchMediaList("media");
-            if (isMounted && list.length > 0) {
-                setMediaList(list);
-                try {
-                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(list));
-                } catch (err) {
-                    console.error("Failed to sync media items to localStorage:", err);
-                }
-            } else if (isMounted) {
-                try {
-                    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-                    if (stored) {
-                        const parsed = JSON.parse(stored);
-                        if (Array.isArray(parsed)) {
-                            setMediaList(parsed);
-                        }
-                    }
-                } catch (err) {
-                    console.error("Failed to load local media items:", err);
-                }
-            }
-        };
         loadMedia();
-        return () => {
-            isMounted = false;
-        };
-    }, []);
+    }, [loadMedia]);
 
     // Save media list to local storage
     const saveMediaList = (list: MediaItem[]) => {
@@ -322,44 +300,29 @@ export default function MediaManagementPage() {
                     </div>
                 )}
 
-                {/* Media Grid / Empty State */}
                 {mediaList.length > 0 ? (
-                    filteredMediaList.length > 0 ? (
-                        <>
-                            <div className="w-full flex-1 overflow-y-auto overflow-x-visible p-2 pr-1">
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-1">
-                                    {paginatedMediaList.map((media) => (
-                                        <MediaCard
-                                            key={media.id}
-                                            imageUrl={media.url}
-                                            fileName={media.fileName}
-                                            fileSize={media.fileSize}
-                                            onDelete={() => setMediaToDelete(media)}
-                                            className="shadow-none! hover:shadow-none! hover:border-primary! hover:outline-1! hover:outline-primary! hover:-outline-offset-1!"
-                                        />
-                                    ))}
-                                </div>
+                    <>
+                        <div className="w-full flex-1 overflow-y-auto overflow-x-visible p-2 pr-1">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-1">
+                                {mediaList.map((media) => (
+                                    <MediaCard
+                                        key={media.id}
+                                        imageUrl={media.url}
+                                        fileName={media.fileName}
+                                        fileSize={media.fileSize}
+                                        onDelete={() => setMediaToDelete(media)}
+                                        className="shadow-none! hover:shadow-none! hover:border-primary! hover:outline-1! hover:outline-primary! hover:-outline-offset-1!"
+                                    />
+                                ))}
                             </div>
-                            <Pagination
-                                currentPage={currentPage}
-                                totalItems={filteredMediaList.length}
-                                itemsPerPage={itemsPerPage}
-                                onPageChange={setCurrentPage}
-                            />
-                        </>
-                    ) : (
-                        <div className="w-full flex-1 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
-                            <div className="size-16 rounded-full bg-indigo-50 flex items-center justify-center text-primary mb-4">
-                                <Icon name="Image 2" className="size-8 bg-current" />
-                            </div>
-                            <h3 className="text-lg font-medium text-slate-800 font-['Poppins']">
-                                No matching files found
-                            </h3>
-                            <p className="text-sm text-slate-500 max-w-md mt-1 font-sans">
-                                No media assets match your search query "<span className="text-primary font-semibold">{searchQuery}</span>".
-                            </p>
                         </div>
-                    )
+                        <Pagination
+                            currentPage={currentPage}
+                            totalItems={totalItems}
+                            itemsPerPage={itemsPerPage}
+                            onPageChange={setCurrentPage}
+                        />
+                    </>
                 ) : (
                     <div className="w-full flex-1 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
                         <div className="size-16 rounded-full bg-indigo-50 flex items-center justify-center text-primary mb-4">

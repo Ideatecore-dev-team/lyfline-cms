@@ -34,24 +34,63 @@ export const mapPartnerRow = (row: PartnerRow): Partner => ({
   updatedAt: row.updated_at,
 });
 
-export const getPartners = async (filters?: { hospitalName?: string; country?: string }): Promise<Partner[]> => {
-  let query = supabase.from("partners").select("*");
+export interface PaginatedPartnersResult {
+  data: Partner[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
 
-  if (filters?.hospitalName?.trim()) {
-    query = query.ilike("hospital_name", `%${filters.hospitalName.trim()}%`);
+export const getPartners = async (options?: {
+  hospitalName?: string;
+  country?: string;
+  page?: number;
+  limit?: number;
+  all?: boolean;
+}): Promise<PaginatedPartnersResult> => {
+  const isAll = options?.all === true;
+  const page = options?.page ?? 1;
+  const limit = isAll ? 10000 : (options?.limit ?? 10);
+
+  let query = supabase.from("partners").select("*", { count: "exact" });
+
+  if (options?.hospitalName?.trim()) {
+    query = query.ilike("hospital_name", `%${options.hospitalName.trim()}%`);
   }
-  if (filters?.country) {
-    query = query.eq("country", filters.country);
+  if (options?.country) {
+    query = query.eq("country", options.country);
   }
 
-  const { data, error } = await query.order("created_at", { ascending: false });
+  query = query.order("created_at", { ascending: false });
+
+  if (!isAll) {
+    const from = (page - 1) * limit;
+    const to = page * limit - 1;
+    query = query.range(from, to);
+  }
+
+  const { data, count, error } = await query;
 
   if (error) {
     console.error("Error looking up partners:", error.message);
     throw new Error(error.message);
   }
 
-  return (data || []).map(mapPartnerRow);
+  const total = count || 0;
+  const totalPages = Math.ceil(total / limit) || 1;
+
+  return {
+    data: (data || []).map(mapPartnerRow),
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages,
+    },
+  };
 };
 
 export const getConsistingCountries = async (): Promise<string[]> => {

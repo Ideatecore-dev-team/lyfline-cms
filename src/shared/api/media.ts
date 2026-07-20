@@ -101,15 +101,47 @@ export const deleteImage = async (url: string): Promise<void> => {
   }
 };
 
-export const fetchMediaList = async (folder: string = "media"): Promise<Array<{
+export interface FetchMediaOptions {
+  folder?: string;
+  page?: number;
+  limit?: number;
+  search?: string;
+}
+
+export interface MediaItemResponse {
   id: string;
   url: string;
   fileName: string;
   fileSize: string;
   uploadedAt: string;
-}>> => {
+}
+
+export interface PaginatedMediaResponse {
+  data: MediaItemResponse[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export const fetchMediaList = async (
+  folderOrOptions: string | FetchMediaOptions = "media"
+): Promise<MediaItemResponse[] | PaginatedMediaResponse> => {
+  const options: FetchMediaOptions =
+    typeof folderOrOptions === "string"
+      ? { folder: folderOrOptions }
+      : folderOrOptions;
+
+  const folder = options.folder || "media";
+  const params = new URLSearchParams({ folder });
+  if (options.page !== undefined) params.set("page", options.page.toString());
+  if (options.limit !== undefined) params.set("limit", options.limit.toString());
+  if (options.search !== undefined && options.search.trim()) params.set("search", options.search.trim());
+
   try {
-    const response = await fetch(`${API_URL}/api/media?folder=${encodeURIComponent(folder)}`, {
+    const response = await fetch(`${API_URL}/api/media?${params.toString()}`, {
       method: "GET",
       headers: {
         "x-upload-api-key": import.meta.env.VITE_UPLOAD_API_KEY || "",
@@ -118,15 +150,54 @@ export const fetchMediaList = async (folder: string = "media"): Promise<Array<{
 
     if (response.ok) {
       const data = await response.json();
-      const rawList = Array.isArray(data) ? data : Array.isArray(data.files) ? data.files : null;
+      const rawList = Array.isArray(data)
+        ? data
+        : Array.isArray(data.data)
+        ? data.data
+        : Array.isArray(data.files)
+        ? data.files
+        : null;
+
       if (rawList) {
-        return rawList.map((item: any, idx: number) => ({
-          id: item.id || `${idx}_${Date.now()}`,
-          url: typeof item === "string" ? item : (item.url || item.path || ""),
-          fileName: typeof item === "string" ? (item.split("/").pop() || item) : (item.fileName || item.filename || item.name || "image.webp"),
-          fileSize: item.fileSize || item.size || "Unknown",
-          uploadedAt: item.uploadedAt || item.createdAt || new Date().toISOString(),
-        }));
+        const formattedList: MediaItemResponse[] = rawList.map(
+          (item: Record<string, unknown> | string, idx: number) => {
+            if (typeof item === "string") {
+              return {
+                id: `${idx}_${Date.now()}`,
+                url: item,
+                fileName: item.split("/").pop() || item,
+                fileSize: "Unknown",
+                uploadedAt: new Date().toISOString(),
+              };
+            }
+            return {
+              id: (item.id as string) || `${idx}_${Date.now()}`,
+              url: (item.url as string) || (item.path as string) || "",
+              fileName:
+                (item.fileName as string) ||
+                (item.filename as string) ||
+                (item.name as string) ||
+                "image.webp",
+              fileSize:
+                (item.fileSize as string | number) ||
+                (item.size as string | number) ||
+                "Unknown",
+              uploadedAt:
+                (item.uploadedAt as string) ||
+                (item.createdAt as string) ||
+                new Date().toISOString(),
+            };
+          }
+        );
+
+        if (data.meta) {
+          return {
+            data: formattedList,
+            meta: data.meta,
+          };
+        }
+
+        return formattedList;
       }
     }
   } catch (err) {

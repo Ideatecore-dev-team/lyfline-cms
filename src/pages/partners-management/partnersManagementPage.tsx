@@ -25,6 +25,7 @@ function PartnersManagementPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const [partners, setPartners] = useState<Partner[]>([]);
+    const [totalPartners, setTotalPartners] = useState(0);
     const [countries, setCountries] = useState<string[]>([]);
     const [currentUser] = useState(() => authApi.getCurrentUser());
     const [loading, setLoading] = useState(true);
@@ -56,21 +57,27 @@ function PartnersManagementPage() {
     // Form states
     const [partnerToDelete, setPartnerToDelete] = useState<Partner | null>(null);
 
-    const fetchPartners = useCallback(async (nameFilter = filterName, countryFilter = filterCountry) => {
+    const fetchPartners = useCallback(async (
+        page: number,
+        nameFilter: string,
+        countryFilter: string
+    ) => {
         setLoading(true);
         try {
-            const data = await getPartners({
+            const res = await getPartners({
                 hospitalName: nameFilter,
                 country: countryFilter,
+                page,
+                limit: itemsPerPage,
             });
-            setPartners(data);
-            setCurrentPage(1);
+            setPartners(res.data);
+            setTotalPartners(res.meta.total);
         } catch (err) {
             console.error("Error loading partners", err);
         } finally {
             setLoading(false);
         }
-    }, [filterName, filterCountry]);
+    }, []);
 
     const loadCountries = async () => {
         try {
@@ -87,11 +94,16 @@ function PartnersManagementPage() {
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
-            fetchPartners(filterName, filterCountry);
+            setCurrentPage(1);
+            fetchPartners(1, filterName, filterCountry);
         }, 300);
 
         return () => clearTimeout(delayDebounceFn);
     }, [filterName, filterCountry, fetchPartners]);
+
+    useEffect(() => {
+        fetchPartners(currentPage, filterName, filterCountry);
+    }, [currentPage, filterName, filterCountry, fetchPartners]);
 
     useEffect(() => {
         if (location.state?.successMessage) {
@@ -113,7 +125,7 @@ function PartnersManagementPage() {
             // Refresh list and countries list
             const countriesList = await getConsistingCountries();
             setCountries(countriesList);
-            fetchPartners(filterName, filterCountry);
+            fetchPartners(currentPage, filterName, filterCountry);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : String(err);
             showNotif("Failed to delete partner: " + errorMessage, "error");
@@ -250,7 +262,7 @@ function PartnersManagementPage() {
                                     No partners found.
                                 </div>
                             ) : (
-                                partners.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((partner, index) => (
+                                partners.map((partner, index) => (
                                     <div
                                         key={partner.id}
                                         className="self-stretch bg-white/0 inline-flex justify-start items-center overflow-hidden border-b border-slate-100 hover:bg-slate-50/40 transition-colors"
@@ -319,7 +331,7 @@ function PartnersManagementPage() {
 
                 <Pagination
                     currentPage={currentPage}
-                    totalItems={partners.length}
+                    totalItems={totalPartners}
                     itemsPerPage={itemsPerPage}
                     onPageChange={setCurrentPage}
                 />

@@ -23,27 +23,71 @@ export const mapArticleRow = (row: ArticleRow): Article => ({
   updatedAt: row.updated_at,
 });
 
-export const getArticles = async (filters?: {
+export interface PaginatedArticlesResult {
+  data: Article[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export const getArticles = async (options?: {
   title?: string;
   category?: string;
-}): Promise<Article[]> => {
-  let query = supabase.from("articles").select("*");
+  sort?: string;
+  page?: number;
+  limit?: number;
+  all?: boolean;
+}): Promise<PaginatedArticlesResult> => {
+  const isAll = options?.all === true;
+  const page = options?.page ?? 1;
+  const limit = isAll ? 10000 : (options?.limit ?? 10);
+  const sort = options?.sort || "newest";
 
-  if (filters?.title?.trim()) {
-    query = query.ilike("article_title", `%${filters.title.trim()}%`);
+  let query = supabase.from("articles").select("*", { count: "exact" });
+
+  if (options?.title?.trim()) {
+    query = query.ilike("article_title", `%${options.title.trim()}%`);
   }
-  if (filters?.category) {
-    query = query.eq("category", filters.category);
+  if (options?.category) {
+    query = query.eq("category", options.category);
   }
 
-  const { data, error } = await query.order("created_at", { ascending: false });
+  if (sort === "oldest") {
+    query = query.order("created_at", { ascending: true });
+  } else if (sort === "updated") {
+    query = query.order("updated_at", { ascending: false });
+  } else {
+    query = query.order("created_at", { ascending: false });
+  }
+
+  if (!isAll) {
+    const from = (page - 1) * limit;
+    const to = page * limit - 1;
+    query = query.range(from, to);
+  }
+
+  const { data, count, error } = await query;
 
   if (error) {
     console.error("Error looking up articles:", error.message);
     throw new Error(error.message);
   }
 
-  return (data || []).map((row) => mapArticleRow(row));
+  const total = count || 0;
+  const totalPages = Math.ceil(total / limit) || 1;
+
+  return {
+    data: (data || []).map((row) => mapArticleRow(row)),
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages,
+    },
+  };
 };
 
 export const getArticleById = async (id: string): Promise<Article | null> => {

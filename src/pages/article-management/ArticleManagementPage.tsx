@@ -34,6 +34,7 @@ function ArticleManagementPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const [articles, setArticles] = useState<Article[]>([]);
+    const [totalArticles, setTotalArticles] = useState(0);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
@@ -72,29 +73,42 @@ function ArticleManagementPage() {
     // Form / Navigation states
     const [articleToDelete, setArticleToDelete] = useState<Article | null>(null);
 
-    const fetchArticles = useCallback(async (titleFilter = filterName, categoryFilter = filterCategory) => {
+    const fetchArticles = useCallback(async (
+        page: number,
+        titleFilter: string,
+        categoryFilter: string,
+        sortFilter: string
+    ) => {
         setLoading(true);
         try {
-            const data = await getArticles({
+            const res = await getArticles({
                 title: titleFilter,
                 category: categoryFilter,
+                sort: sortFilter,
+                page,
+                limit: itemsPerPage,
             });
-            setArticles(data);
-            setCurrentPage(1);
+            setArticles(res.data);
+            setTotalArticles(res.meta.total);
         } catch (err) {
             console.error("Error loading articles", err);
         } finally {
             setLoading(false);
         }
-    }, [filterName, filterCategory]);
+    }, []);
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
-            fetchArticles(filterName, filterCategory);
+            setCurrentPage(1);
+            fetchArticles(1, filterName, filterCategory, filterSort);
         }, 300);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [filterName, filterCategory, fetchArticles]);
+    }, [filterName, filterCategory, filterSort, fetchArticles]);
+
+    useEffect(() => {
+        fetchArticles(currentPage, filterName, filterCategory, filterSort);
+    }, [currentPage, filterName, filterCategory, filterSort, fetchArticles]);
 
     const handleAddClick = () => {
         navigate("/cms/article/add");
@@ -114,7 +128,7 @@ function ArticleManagementPage() {
             await deleteArticle(articleToDelete.id);
             showNotif(`Article "${articleToDelete.title}" deleted successfully!`, "success");
             setArticleToDelete(null);
-            fetchArticles(filterName, filterCategory);
+            fetchArticles(currentPage, filterName, filterCategory, filterSort);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : String(err);
             showNotif("Failed to delete article: " + errorMessage, "error");
@@ -125,21 +139,6 @@ function ArticleManagementPage() {
     const categories = Array.from(
         new Set([...DEFAULT_CATEGORIES, ...articles.map((a) => a.category)])
     ).filter(Boolean);
-
-    // Apply filtering and sorting
-    let filteredAndSortedArticles = articles;
-
-    // Client-side filtration for instant feedback if desired, or relying entirely on server-side.
-    // Since we now query database, we only need to sort the retrieved results on client-side!
-    filteredAndSortedArticles = [...filteredAndSortedArticles].sort((a, b) => {
-        if (filterSort === "oldest") {
-            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        } else if (filterSort === "updated") {
-            return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-        } else {
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        }
-    });
 
     const formatDate = (dateString: string) => {
         if (!dateString) return "-";
@@ -274,12 +273,12 @@ function ArticleManagementPage() {
                                 <div className="w-full p-12 text-center text-slate-400 font-sans">
                                     Loading articles...
                                 </div>
-                            ) : filteredAndSortedArticles.length === 0 ? (
+                            ) : articles.length === 0 ? (
                                 <div className="w-full p-12 text-center text-slate-400 font-sans">
                                     No articles found.
                                 </div>
                             ) : (
-                                filteredAndSortedArticles.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((article, index) => (
+                                articles.map((article, index) => (
                                     <div
                                         key={article.id}
                                         className="w-full bg-white/0 flex justify-start items-stretch overflow-hidden border-b border-slate-100 hover:bg-slate-50/40 transition-colors"
@@ -348,7 +347,7 @@ function ArticleManagementPage() {
 
                 <Pagination
                     currentPage={currentPage}
-                    totalItems={filteredAndSortedArticles.length}
+                    totalItems={totalArticles}
                     itemsPerPage={itemsPerPage}
                     onPageChange={setCurrentPage}
                 />
