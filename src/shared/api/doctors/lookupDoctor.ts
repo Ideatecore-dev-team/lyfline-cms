@@ -15,6 +15,7 @@ interface DoctorRow {
   created_at: string;
   description?: string;
   avatarUrl?: string | null;
+  type?: string;
   partners?: {
     hospital_name?: string;
     country?: string;
@@ -35,6 +36,7 @@ export const mapDoctorRow = (row: DoctorRow, imageUrl: string | null): Doctor =>
   hospitalId: row.hospital_id,
   createdAt: row.created_at,
   description: row.description || "",
+  type: row.type,
 });
 
 export interface PaginatedDoctorsResult {
