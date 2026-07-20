@@ -170,7 +170,7 @@ export default function ManageDoctorsForm() {
                 <div className="hidden lg:block shrink-0">
                     <Sidebar minimal />
                 </div>
-                <div className="flex-1 p-8 bg-white rounded-[32px] flex flex-col items-center justify-center min-h-[400px] border border-gray-100 shadow-sm text-center">
+                <div className="flex-1 p-8 bg-white rounded-4xl flex flex-col items-center justify-center min-h-100 border border-gray-100 shadow-sm text-center">
                     <div className="p-4 bg-red-50 rounded-full text-red-500 mb-4">
                         <Icon name="Danger Circle" className="size-12 bg-current" />
                     </div>
@@ -189,7 +189,7 @@ export default function ManageDoctorsForm() {
                 <div className="hidden lg:block shrink-0">
                     <Sidebar minimal />
                 </div>
-                <div className="flex-1 p-8 bg-white rounded-[32px] flex flex-col items-center justify-center min-h-[400px] border border-gray-100 shadow-sm text-center">
+                <div className="flex-1 p-8 bg-white rounded-4xl flex flex-col items-center justify-center min-h-100 border border-gray-100 shadow-sm text-center">
                     <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
                 </div>
             </div>
@@ -204,7 +204,7 @@ export default function ManageDoctorsForm() {
             </div>
 
             {/* Main Content Card */}
-            <div className="flex-1 p-6 bg-white rounded-[32px] inline-flex flex-col justify-start items-start gap-6 overflow-hidden shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border border-slate-100/50">
+            <div className="flex-1 p-6 bg-white rounded-4xl inline-flex flex-col justify-start items-start gap-6 overflow-hidden shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border border-slate-100/50">
                 {/* Back Button */}
                 <Button
                     onClick={() => navigate("/cms/doctors")}
@@ -329,7 +329,7 @@ export default function ManageDoctorsForm() {
                         {/* Speciality */}
                         <div className="flex flex-col gap-3 w-full">
                             <div className="self-stretch px-2.5 py-2.5 bg-primary/10 rounded-xl flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-6">
-                                <div className="w-full sm:w-[486px] flex justify-start items-center gap-3">
+                                <div className="w-full sm:w-121.5 flex justify-start items-center gap-3">
                                     <Icon name="Nurse" className="size-5 bg-primary" />
                                     <div className="justify-start">
                                         <span className="text-primary text-base font-medium font-sans">Speciality</span>
@@ -384,7 +384,7 @@ export default function ManageDoctorsForm() {
                         {/* Qualification */}
                         <div className="flex flex-col gap-3 w-full">
                             <div className="self-stretch px-2.5 py-2.5 bg-primary/10 rounded-xl flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-6">
-                                <div className="w-full sm:w-[486px] flex justify-start items-center gap-3">
+                                <div className="w-full sm:w-121.5 flex justify-start items-center gap-3">
                                     <Icon name="Document Align Left 5" className="size-5 bg-primary" />
                                     <div className="justify-start">
                                         <span className="text-primary text-base font-medium font-sans">Qualification</span>
@@ -439,7 +439,7 @@ export default function ManageDoctorsForm() {
                         {/* Languages */}
                         <div className="flex flex-col gap-3 w-full">
                             <div className="self-stretch px-2.5 py-2.5 bg-primary/10 rounded-xl flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-6">
-                                <div className="w-full sm:w-[486px] flex justify-start items-center gap-3">
+                                <div className="w-full sm:w-121.5 flex justify-start items-center gap-3">
                                     <Icon name="Message 18" className="size-5 bg-primary" />
                                     <div className="justify-start">
                                         <span className="text-primary text-base font-medium font-sans">Languages</span>

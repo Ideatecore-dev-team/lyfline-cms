@@ -201,7 +201,7 @@ export default function UploadFile({
                         onDragLeave={handleDrag}
                         onDrop={handleDrop}
                         onClick={triggerBrowse}
-                        className={`self-stretch py-12 px-4 rounded-[32px] outline-1 -outline-offset-1 transition-all cursor-pointer flex flex-col justify-start items-center gap-2.5 overflow-hidden ${dragActive
+                        className={`self-stretch py-12 px-4 rounded-4xl outline-1 -outline-offset-1 transition-all cursor-pointer flex flex-col justify-start items-center gap-2.5 overflow-hidden ${dragActive
                             ? "outline-primary bg-indigo-50/30 scale-[0.99] outline-dashed"
                             : "outline-[#9EB7DA] hover:bg-slate-100/70"
                             }`}
@@ -253,10 +253,10 @@ export default function UploadFile({
                                         className="size-10 rounded-lg object-cover border border-slate-200"
                                     />
                                     <div className="flex flex-col text-left overflow-hidden">
-                                        <div className="text-sm font-medium text-slate-800 truncate max-w-[400px] font-sans">
+                                        <div className="text-sm font-medium text-slate-800 truncate max-w-100 font-sans">
                                             Saved Hospital Image
                                         </div>
-                                        <div className="text-xs text-primary font-sans truncate max-w-[400px]">
+                                        <div className="text-xs text-primary font-sans truncate max-w-100">
                                             {getFileNameFromUrl(url)}
                                         </div>
                                     </div>
@@ -310,7 +310,7 @@ export default function UploadFile({
                                         </div>
                                     )}
                                     <div className="flex flex-col text-left overflow-hidden">
-                                        <div className="text-sm font-medium text-slate-800 truncate max-w-[400px] font-sans">
+                                        <div className="text-sm font-medium text-slate-800 truncate max-w-100 font-sans">
                                             {file.name}
                                         </div>
                                         <div className="text-xs text-primary font-sans">
@@ -349,10 +349,10 @@ export default function UploadFile({
                                         className="size-10 rounded-lg object-cover border border-slate-200"
                                     />
                                     <div className="flex flex-col text-left overflow-hidden">
-                                        <div className="text-sm font-medium text-slate-800 truncate max-w-[400px] font-sans">
+                                        <div className="text-sm font-medium text-slate-800 truncate max-w-100 font-sans">
                                             {defaultImageLabel}
                                         </div>
-                                        <div className="text-xs text-primary font-sans truncate max-w-[400px]">
+                                        <div className="text-xs text-primary font-sans truncate max-w-100">
                                             {getFileNameFromUrl(defaultImageUrl)}
                                         </div>
                                     </div>

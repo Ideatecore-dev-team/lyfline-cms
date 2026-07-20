@@ -93,7 +93,7 @@ export default function MediaSelectModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-4xl p-6 bg-white rounded-[32px] border border-slate-100/50 flex flex-col justify-start items-start gap-6 shadow-2xl max-h-[85vh] overflow-hidden animate-scale-in"
+        className="w-full max-w-4xl p-6 bg-white rounded-4xl border border-slate-100/50 flex flex-col justify-start items-start gap-6 shadow-2xl max-h-[85vh] overflow-hidden animate-scale-in"
       >
         {/* Title Bar */}
         <div className="self-stretch inline-flex justify-between items-start">

@@ -55,7 +55,7 @@ export const addDoctor = async (
       throw new Error("Failed to create doctor.");
     }
 
-    return mapDoctorRow(data, imageUrl);
+    return mapDoctorRow(data);
   } catch (err) {
     // Attempt clean up of any uploaded files on failure
     if (imageUrl) {

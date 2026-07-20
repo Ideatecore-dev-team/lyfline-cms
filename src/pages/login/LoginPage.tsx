@@ -62,7 +62,7 @@ function LoginPage() {
     >
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-[466px] p-6 bg-white rounded-[32px] shadow-[0px_2px_2px_0px_rgba(0,0,0,0.10)] flex flex-col justify-start items-stretch gap-5"
+        className="w-full max-w-116.5 p-6 bg-white rounded-4xl shadow-[0px_2px_2px_0px_rgba(0,0,0,0.10)] flex flex-col justify-start items-stretch gap-5"
       >
         {/* Logo */}
         <div className="w-24 h-12 relative overflow-hidden flex items-center">

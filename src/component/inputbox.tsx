@@ -27,7 +27,7 @@ export default function InputBox({
   };
 
   return (
-    <div className={`w-full max-w-[466px] inline-flex flex-col justify-start items-start gap-2 ${containerClassName}`}>
+    <div className={`w-full max-w-116.5 inline-flex flex-col justify-start items-start gap-2 ${containerClassName}`}>
       {label && (
         <label className="self-stretch justify-start text-primary text-sm font-normal font-sans">
           {label}
