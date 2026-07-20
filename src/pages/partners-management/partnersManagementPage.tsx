@@ -136,7 +136,7 @@ function PartnersManagementPage() {
         return (
             <div className="w-full px-0 py-8 inline-flex justify-center items-start gap-6 overflow-hidden">
 
-                <div className="flex-1 p-8 bg-white rounded-[32px] flex flex-col items-center justify-center min-h-[400px] border border-gray-100 shadow-sm text-center">
+                <div className="flex-1 p-8 bg-white rounded-4xl flex flex-col items-center justify-center min-h-100 border border-gray-100 shadow-sm text-center">
                     <div className="p-4 bg-red-50 rounded-full text-red-500 mb-4">
                         <Icon name="Danger Circle" className="size-12 bg-current" />
                     </div>
@@ -157,7 +157,7 @@ function PartnersManagementPage() {
             </div>
 
             {/* Main Content Card */}
-            <div className="flex-1 h-[820px] p-6 bg-white rounded-[32px] flex flex-col justify-start items-stretch gap-6 overflow-hidden shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border border-slate-100/50">
+            <div className="flex-1 h-205 p-6 bg-white rounded-4xl flex flex-col justify-start items-stretch gap-6 overflow-hidden shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border border-slate-100/50">
                 {/* Header Block */}
                 <div className="self-stretch flex flex-col sm:flex-row justify-between items-stretch sm:items-start gap-4 sm:gap-6">
                     <div className="flex-1 inline-flex flex-col justify-start items-start gap-2">
@@ -212,7 +212,7 @@ function PartnersManagementPage() {
                 {/* Table Container */}
                 <div className="self-stretch flex-1 bg-white flex flex-col justify-start items-stretch gap-2 overflow-hidden w-full">
                     <div className="w-full flex-1 overflow-x-auto">
-                        <div className="min-w-[800px] flex flex-col items-stretch gap-2">
+                        <div className="min-w-200 flex flex-col items-stretch gap-2">
                             {/* Table Header */}
                             <div className="self-stretch h-9 rounded-sm inline-flex justify-start items-start overflow-hidden">
                                 <div className="w-16 self-stretch bg-indigo-50 inline-flex flex-col justify-center items-start">

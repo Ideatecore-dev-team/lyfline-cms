@@ -55,7 +55,7 @@ function Sidebar({ minimal = false }: SidebarProps) {
   ];
 
   const menuContent = (
-    <div className="w-full lg:w-72 p-0 lg:p-6 bg-transparent lg:bg-white rounded-none lg:rounded-[32px] flex flex-col justify-start items-stretch gap-4 shadow-none lg:shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border-0 lg:border border-slate-100/50 shrink-0 lg:sticky lg:top-6">
+    <div className="w-full lg:w-72 p-0 lg:p-6 bg-transparent lg:bg-white rounded-none lg:rounded-4xl flex flex-col justify-start items-stretch gap-4 shadow-none lg:shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border-0 lg:border border-slate-100/50 shrink-0 lg:sticky lg:top-6">
       <div className="self-stretch justify-start text-[#95B0D7] text-sm tracking-wider font-sans uppercase">
         MENU BAR
       </div>

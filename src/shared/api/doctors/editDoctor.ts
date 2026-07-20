@@ -69,5 +69,5 @@ export const editDoctor = async (
     throw new Error(updateError.message);
   }
 
-  return mapDoctorRow(data, finalImageUrl);
+  return mapDoctorRow(data);
 };

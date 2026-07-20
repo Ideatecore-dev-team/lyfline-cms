@@ -208,7 +208,7 @@ export default function MediaManagementPage() {
     if (currentUser && currentUser.role !== "super_admin" && currentUser.role !== "admin") {
         return (
             <div className="w-full px-0 py-8 inline-flex justify-center items-start gap-6 overflow-hidden">
-                <div className="flex-1 p-8 bg-white rounded-[32px] flex flex-col items-center justify-center min-h-[400px] border border-gray-100 shadow-sm text-center">
+                <div className="flex-1 p-8 bg-white rounded-4xl flex flex-col items-center justify-center min-h-100 border border-gray-100 shadow-sm text-center">
                     <div className="p-4 bg-red-50 rounded-full text-red-500 mb-4">
                         <Icon name="Danger Circle" className="size-12 bg-current" />
                     </div>
@@ -247,7 +247,7 @@ export default function MediaManagementPage() {
             </div>
 
             {/* Main Content Card */}
-            <div className="flex-1 min-h-[820px] p-6 bg-white rounded-[32px] flex flex-col justify-start items-stretch gap-6 overflow-hidden shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border border-slate-100/50">
+            <div className="flex-1 min-h-205 p-6 bg-white rounded-4xl flex flex-col justify-start items-stretch gap-6 overflow-hidden shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border border-slate-100/50">
                 {/* Header Block */}
                 <div className="self-stretch flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 sm:gap-6">
                     <div className="flex-1 inline-flex flex-col justify-start items-start gap-2">
@@ -285,20 +285,18 @@ export default function MediaManagementPage() {
                 <div className="self-stretch h-px bg-slate-100" />
 
                 {/* Filters */}
-                {mediaList.length > 0 && (
-                    <div className="self-stretch flex flex-col md:flex-row md:items-end items-stretch gap-4 w-full">
-                        <InputBox
-                            label="File Name"
-                            placeholder="Search file name..."
-                            value={searchQuery}
-                            onChange={(e) => {
-                                setSearchQuery(e.target.value);
-                                setCurrentPage(1);
-                            }}
-                            containerClassName="w-full max-w-none md:w-1/3 md:min-w-[280px]"
-                        />
-                    </div>
-                )}
+                <div className="self-stretch flex flex-col md:flex-row md:items-end items-stretch gap-4 w-full">
+                    <InputBox
+                        label="File Name"
+                        placeholder="Search file name..."
+                        value={searchQuery}
+                        onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setCurrentPage(1);
+                        }}
+                        containerClassName="w-full max-w-none md:w-1/3 md:min-w-[280px]"
+                    />
+                </div>
 
                 {mediaList.length > 0 ? (
                     <>
@@ -324,13 +322,19 @@ export default function MediaManagementPage() {
                         />
                     </>
                 ) : (
-                    <div className="w-full flex-1 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
+                    <div className="w-full flex-1 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center p-12 text-center min-h-100">
                         <div className="size-16 rounded-full bg-indigo-50 flex items-center justify-center text-primary mb-4">
                             <Icon name="Image 2" className="size-8 bg-current" />
                         </div>
-                        <p className="text-sm text-slate-500 max-w-md mt-1 font-sans">
-                            Use <span className="text-primary font-semibold">Upload Image</span> or <span className="text-primary font-semibold">Upload Batch</span> above to begin migrating and organizing your media assets.
-                        </p>
+                        {searchQuery ? (
+                            <p className="text-sm text-slate-500 max-w-md mt-1 font-sans">
+                                No media assets found matching "<span className="text-slate-800 font-semibold">{searchQuery}</span>". Try clearing or changing your search query.
+                            </p>
+                        ) : (
+                            <p className="text-sm text-slate-500 max-w-md mt-1 font-sans">
+                                Use <span className="text-primary font-semibold">Upload Image</span> or <span className="text-primary font-semibold">Upload Batch</span> above to begin migrating and organizing your media assets.
+                            </p>
+                        )}
                     </div>
                 )}
             </div>

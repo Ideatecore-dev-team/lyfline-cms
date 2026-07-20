@@ -1,8 +1,7 @@
 import { supabase } from "../../../supabaseClient";
 import { type Doctor } from "../doctor";
 
-const BUCKET_NAME = "Lyfline Files";
-const DOCTORS_FOLDER = "Doctors";
+
 
 interface DoctorRow {
   id: string;
@@ -15,6 +14,7 @@ interface DoctorRow {
   created_at: string;
   description?: string;
   avatarUrl?: string | null;
+  type?: string;
   partners?: {
     hospital_name?: string;
     country?: string;
@@ -22,7 +22,7 @@ interface DoctorRow {
 }
 
 // Helper to map DB row to Doctor type
-export const mapDoctorRow = (row: DoctorRow, imageUrl: string | null): Doctor => ({
+export const mapDoctorRow = (row: DoctorRow): Doctor => ({
   id: row.id,
   doctorName: row.doctor_name,
   hospital: row.partners?.hospital_name || "Unknown Hospital",
@@ -31,10 +31,11 @@ export const mapDoctorRow = (row: DoctorRow, imageUrl: string | null): Doctor =>
   specialities: row.doctor_specialty || [],
   qualifications: row.doctor_qualification || [],
   languages: row.doctor_language || [],
-  imageUrl: row.avatarUrl || imageUrl || null,
+  imageUrl: row.avatarUrl || null,
   hospitalId: row.hospital_id,
   createdAt: row.created_at,
   description: row.description || "",
+  type: row.type,
 });
 
 export interface PaginatedDoctorsResult {
@@ -88,26 +89,7 @@ export const getDoctors = async (options?: {
     throw new Error(error.message);
   }
 
-  // Fetch all file listings in storage to resolve images in one pass
-  const { data: files } = await supabase.storage
-    .from(BUCKET_NAME)
-    .list(DOCTORS_FOLDER);
-
-  const imageMap: Record<string, string> = {};
-  if (files) {
-    files.forEach((file) => {
-      const dotIndex = file.name.indexOf(".");
-      const doctorId = dotIndex !== -1 ? file.name.substring(0, dotIndex) : file.name;
-      if (doctorId && doctorId !== ".emptyFolderPlaceholder") {
-        const { data: urlData } = supabase.storage
-          .from(BUCKET_NAME)
-          .getPublicUrl(`${DOCTORS_FOLDER}/${file.name}`);
-        imageMap[doctorId] = urlData.publicUrl;
-      }
-    });
-  }
-
-  let results = (data || []).map((row) => mapDoctorRow(row, imageMap[row.id] || null));
+  let results = (data || []).map(mapDoctorRow);
 
   if (options?.speciality) {
     results = results.filter(
@@ -145,23 +127,7 @@ export const getDoctorById = async (id: string): Promise<Doctor | null> => {
 
   if (!data) return null;
 
-  // Resolve image for this single doctor
-  const { data: files } = await supabase.storage
-    .from(BUCKET_NAME)
-    .list(DOCTORS_FOLDER, { search: id });
-
-  let imageUrl: string | null = null;
-  if (files && files.length > 0) {
-    const matchingFile = files.find((f) => f.name.startsWith(`${id}.`));
-    if (matchingFile) {
-      const { data: urlData } = supabase.storage
-        .from(BUCKET_NAME)
-        .getPublicUrl(`${DOCTORS_FOLDER}/${matchingFile.name}`);
-      imageUrl = urlData.publicUrl;
-    }
-  }
-
-  return mapDoctorRow(data, imageUrl);
+  return mapDoctorRow(data);
 };
 
 export const getConsistingHospitals = async (): Promise<string[]> => {

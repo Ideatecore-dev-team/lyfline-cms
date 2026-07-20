@@ -109,7 +109,7 @@ export default function PromoManagementPage() {
             </div>
 
             {/* Main Content Card */}
-            <div className="flex-1 p-6 bg-white rounded-[32px] inline-flex flex-col justify-start items-start gap-6 overflow-hidden shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border border-slate-100/50">
+            <div className="flex-1 p-6 bg-white rounded-4xl inline-flex flex-col justify-start items-start gap-6 overflow-hidden shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border border-slate-100/50">
                 {/* Header Block */}
                 <div className="self-stretch inline-flex justify-start items-start gap-6">
                     <div className="flex-1 inline-flex flex-col justify-start items-start gap-2">

@@ -156,7 +156,7 @@ function ArticleManagementPage() {
                 <Sidebar minimal />
             </div>
 
-            <div className="flex-1 h-[820px] p-6 bg-white rounded-[32px] flex flex-col justify-start items-stretch gap-6 overflow-hidden shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border border-slate-100/50">
+            <div className="flex-1 h-205 p-6 bg-white rounded-4xl flex flex-col justify-start items-stretch gap-6 overflow-hidden shadow-[0px_2px_2px_0px_rgba(0,0,0,0.05)] border border-slate-100/50">
                 {/* Header Block */}
                 <div className="self-stretch flex flex-col sm:flex-row justify-between items-stretch sm:items-start gap-4 sm:gap-6">
                     <div className="flex-1 inline-flex flex-col justify-start items-start gap-2">
@@ -221,7 +221,7 @@ function ArticleManagementPage() {
                 {/* Table Container */}
                 <div className="w-full flex-1 bg-white flex flex-col justify-start items-stretch gap-0 overflow-hidden">
                     <div className="w-full flex-1 overflow-x-auto">
-                        <div className="min-w-[900px] flex flex-col items-stretch gap-0">
+                        <div className="min-w-225 flex flex-col items-stretch gap-0">
                             {/* Table Header */}
                             <div className="w-full h-9 rounded-sm flex justify-start items-stretch overflow-hidden bg-indigo-50">
                                 <div className="w-16 flex flex-col justify-center items-start shrink-0">
