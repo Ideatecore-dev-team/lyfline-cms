@@ -314,20 +314,20 @@ function ArticleManagementPage() {
                                         <div className="w-44 flex flex-col justify-center items-start shrink-0">
                                             <div className="w-full p-3 flex flex-col justify-center items-start overflow-hidden">
                                                 <div className="flex flex-wrap gap-1">
-                                                    {Array.isArray(article.category) && article.category.length > 1 ? (
+                                                    {article.category.length > 1 ? (
                                                         <Badge
                                                             variant="gray"
                                                             text={`${article.category.length} Categories`}
                                                         />
-                                                    ) : Array.isArray(article.category) && article.category.length === 1 ? (
+                                                    ) : article.category.length === 1 ? (
                                                         <Badge
                                                             variant={getBadgeVariant(article.categoryColor?.[0])}
                                                             text={article.category[0]}
                                                         />
                                                     ) : (
                                                         <Badge
-                                                            variant={getBadgeVariant(article.categoryColor as string)}
-                                                            text={article.category as string}
+                                                            variant="gray"
+                                                            text="No Category"
                                                         />
                                                     )}
                                                 </div>
