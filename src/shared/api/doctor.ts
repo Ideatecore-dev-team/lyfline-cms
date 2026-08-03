@@ -11,6 +11,7 @@ export interface Doctor {
   hospitalId?: string;
   createdAt: string;
   description?: string;
+  description_indonesia?: string;
   type?: string;
 }
 

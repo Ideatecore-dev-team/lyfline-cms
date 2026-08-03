@@ -15,6 +15,7 @@ export const editDoctor = async (
     qualifications: string[];
     languages: string[];
     description?: string;
+    description_indonesia?: string;
   },
   imageFile?: File | null,
   imageRemoved?: boolean
@@ -57,6 +58,7 @@ export const editDoctor = async (
       doctor_qualification: doctorData.qualifications || [],
       doctor_language: doctorData.languages || [],
       description: doctorData.description || "",
+      description_indonesia: doctorData.description_indonesia || "",
       avatarUrl: finalImageUrl,
       updated_at: new Date().toISOString(),
     })

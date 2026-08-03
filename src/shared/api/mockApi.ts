@@ -112,15 +112,41 @@ export const mockApi = {
 
     localStorage.setItem('lyfline_token', 'mock-jwt-token-xyz');
     localStorage.setItem('lyfline_current_user', JSON.stringify(user));
+    localStorage.setItem('lyfline_login_time', Date.now().toString());
     return { token: 'mock-jwt-token-xyz', user };
   },
 
   logout: async (): Promise<void> => {
     localStorage.removeItem('lyfline_token');
     localStorage.removeItem('lyfline_current_user');
+    localStorage.removeItem('lyfline_login_time');
+  },
+
+  checkSession: (): boolean => {
+    const token = localStorage.getItem('lyfline_token');
+    const loginTimeStr = localStorage.getItem('lyfline_login_time');
+
+    if (!token) return false;
+
+    if (loginTimeStr) {
+      const loginTime = parseInt(loginTimeStr, 10);
+      if (!isNaN(loginTime) && Date.now() - loginTime > 5 * 60 * 60 * 1000) {
+        localStorage.removeItem('lyfline_token');
+        localStorage.removeItem('lyfline_current_user');
+        localStorage.removeItem('lyfline_login_time');
+        return false;
+      }
+    } else {
+      localStorage.setItem('lyfline_login_time', Date.now().toString());
+    }
+
+    return true;
   },
 
   getCurrentUser: (): User | null => {
+    if (!mockApi.checkSession()) {
+      return null;
+    }
     const userStr = localStorage.getItem('lyfline_current_user');
     return userStr ? JSON.parse(userStr) : null;
   },

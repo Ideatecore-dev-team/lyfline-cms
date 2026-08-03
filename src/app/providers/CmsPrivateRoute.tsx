@@ -1,8 +1,9 @@
 import { Navigate, Outlet } from "react-router-dom";
+import { authApi } from "../../shared/api/auth";
 
 const CmsPrivateRoute = () => {
-  const token = localStorage.getItem("lyfline_token");
-  return token ? <Outlet /> : <Navigate to="/cms" replace />;
+  const isValid = authApi.checkSession();
+  return isValid ? <Outlet /> : <Navigate to="/cms" replace />;
 };
 
 export default CmsPrivateRoute;

@@ -4,24 +4,60 @@ import { type Article } from "../article";
 interface ArticleRow {
   id: string;
   article_title: string;
-  category: string;
-  category_color: string;
+  article_title_indonesia?: string;
+  category: string[] | string | null;
+  category_color: string[] | string | null;
   article_content: string;
+  article_content_indonesia?: string;
   created_at: string;
   updated_at: string;
   imageUrl?: string | null;
 }
 
-export const mapArticleRow = (row: ArticleRow): Article => ({
-  id: row.id,
-  title: row.article_title,
-  category: row.category,
-  categoryColor: row.category_color,
-  content: row.article_content,
-  imageUrl: row.imageUrl || null,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
-});
+export const mapArticleRow = (row: ArticleRow): Article => {
+  let categoriesArray: string[] = [];
+  if (Array.isArray(row.category)) {
+    categoriesArray = row.category;
+  } else if (typeof row.category === "string" && row.category) {
+    if (row.category.startsWith('[') && row.category.endsWith(']')) {
+      try {
+        categoriesArray = JSON.parse(row.category);
+      } catch {
+        categoriesArray = [row.category];
+      }
+    } else {
+      categoriesArray = [row.category];
+    }
+  }
+
+  let colorsArray: string[] = [];
+  if (Array.isArray(row.category_color)) {
+    colorsArray = row.category_color;
+  } else if (typeof row.category_color === "string" && row.category_color) {
+    if (row.category_color.startsWith('[') && row.category_color.endsWith(']')) {
+      try {
+        colorsArray = JSON.parse(row.category_color);
+      } catch {
+        colorsArray = [row.category_color];
+      }
+    } else {
+      colorsArray = [row.category_color];
+    }
+  }
+
+  return {
+    id: row.id,
+    title: row.article_title,
+    titleIndonesia: row.article_title_indonesia || "",
+    category: categoriesArray,
+    categoryColor: colorsArray,
+    content: row.article_content,
+    contentIndonesia: row.article_content_indonesia || "",
+    imageUrl: row.imageUrl || null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+};
 
 export interface PaginatedArticlesResult {
   data: Article[];
@@ -44,7 +80,7 @@ export const getArticles = async (options?: {
   const isAll = options?.all === true;
   const page = options?.page ?? 1;
   const limit = isAll ? 10000 : (options?.limit ?? 10);
-  const sort = options?.sort || "newest";
+  const sort = options?.sort || "updated";
 
   let query = supabase.from("articles").select("*", { count: "exact" });
 
@@ -52,7 +88,7 @@ export const getArticles = async (options?: {
     query = query.ilike("article_title", `%${options.title.trim()}%`);
   }
   if (options?.category) {
-    query = query.eq("category", options.category);
+    query = query.contains("category", [options.category]);
   }
 
   if (sort === "oldest") {
@@ -117,6 +153,21 @@ export const getConsistingCategories = async (): Promise<string[]> => {
     throw new Error(error.message);
   }
 
-  const categories = (data || []).map((row) => row.category).filter(Boolean);
+  const categories = (data || [])
+    .flatMap((row) => {
+      if (Array.isArray(row.category)) return row.category;
+      if (typeof row.category === "string" && row.category) {
+        if (row.category.startsWith('[') && row.category.endsWith(']')) {
+          try {
+            return JSON.parse(row.category) as string[];
+          } catch {
+            return [row.category];
+          }
+        }
+        return [row.category];
+      }
+      return [];
+    })
+    .filter(Boolean);
   return Array.from(new Set(categories));
 };

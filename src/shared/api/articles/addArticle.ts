@@ -71,6 +71,7 @@ export const addArticle = async (
   try {
     // 1. Process inline content images (Base64 -> Supabase Link)
     const processedContent = await processContentImages(articleId, articleData.content, uploadedUrls);
+    const processedContentIndonesia = await processContentImages(articleId, articleData.contentIndonesia, uploadedUrls);
 
     // 2. Upload Banner Image if provided
     if (bannerFile) {
@@ -90,9 +91,11 @@ export const addArticle = async (
         {
           id: articleId,
           article_title: articleData.title,
+          article_title_indonesia: articleData.titleIndonesia,
           category: articleData.category,
-          category_color: articleData.categoryColor || "#000000",
+          category_color: articleData.categoryColor,
           article_content: processedContent,
+          article_content_indonesia: processedContentIndonesia,
           imageUrl: bannerUrl,
         },
       ])

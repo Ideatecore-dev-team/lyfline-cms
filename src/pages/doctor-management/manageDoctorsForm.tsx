@@ -34,6 +34,7 @@ export default function ManageDoctorsForm() {
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imageRemoved, setImageRemoved] = useState(false);
     const [description, setDescription] = useState("");
+    const [descriptionIndonesia, setDescriptionIndonesia] = useState("");
 
     // Partnerships for dropdown lookup
     const [partners, setPartners] = useState<Partner[]>([]);
@@ -93,6 +94,7 @@ export default function ManageDoctorsForm() {
                     setQualifications(doctor.qualifications || []);
                     setLanguages(doctor.languages || []);
                     setDescription(doctor.description || "");
+                    setDescriptionIndonesia(doctor.description_indonesia || "");
                 } else {
                     showNotif("Doctor not found.", "error");
                 }
@@ -133,6 +135,7 @@ export default function ManageDoctorsForm() {
                 qualifications,
                 languages,
                 description,
+                descriptionIndonesia,
             });
 
             const doctorData = {
@@ -143,6 +146,7 @@ export default function ManageDoctorsForm() {
                 qualifications,
                 languages,
                 description: description.trim(),
+                description_indonesia: descriptionIndonesia.trim(),
             };
 
             const msg = id
@@ -298,6 +302,15 @@ export default function ManageDoctorsForm() {
                                 placeholder="Write something about the doctor..."
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
+                                containerClassName="max-w-none"
+                            />
+
+                            {/* Doctor Description ( Bahasa Indonesia ) */}
+                            <DescriptionBox
+                                label="Description (For Bahasa Indonesia)"
+                                placeholder="Tulis deskripsi tentang dokter..."
+                                value={descriptionIndonesia}
+                                onChange={(e) => setDescriptionIndonesia(e.target.value)}
                                 containerClassName="max-w-none"
                             />
 
