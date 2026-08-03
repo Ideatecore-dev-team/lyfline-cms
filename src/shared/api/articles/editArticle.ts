@@ -10,9 +10,11 @@ export const editArticle = async (
   id: string,
   articleData: {
     title: string;
-    category: string;
-    categoryColor: string;
+    titleIndonesia?: string;
+    category: string[];
+    categoryColor: string[];
     content: string;
+    contentIndonesia: string;
   },
   bannerFile?: File | null,
   bannerRemoved?: boolean
@@ -22,6 +24,7 @@ export const editArticle = async (
   try {
     // 1. Process inline content images (Base64 -> Supabase Link)
     const processedContent = await processContentImages(id, articleData.content, uploadedUrls);
+    const processedContentIndonesia = await processContentImages(id, articleData.contentIndonesia, uploadedUrls);
 
     // 2. Resolve existing banner from DB
     const { data: currentArticle, error: getError } = await supabase
@@ -63,9 +66,11 @@ export const editArticle = async (
       .from("articles")
       .update({
         article_title: articleData.title,
+        article_title_indonesia: articleData.titleIndonesia,
         category: articleData.category,
         category_color: articleData.categoryColor,
         article_content: processedContent,
+        article_content_indonesia: processedContentIndonesia,
         updated_at: new Date().toISOString(),
         imageUrl: finalBannerUrl,
       })

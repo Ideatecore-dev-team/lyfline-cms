@@ -13,6 +13,7 @@ interface DoctorRow {
   hospital_id: string;
   created_at: string;
   description?: string;
+  description_indonesia?: string;
   avatarUrl?: string | null;
   type?: string;
   partners?: {
@@ -35,6 +36,7 @@ export const mapDoctorRow = (row: DoctorRow): Doctor => ({
   hospitalId: row.hospital_id,
   createdAt: row.created_at,
   description: row.description || "",
+  description_indonesia: row.description_indonesia || "",
   type: row.type,
 });
 

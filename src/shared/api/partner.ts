@@ -4,6 +4,7 @@ export interface Partner {
   city: string;
   country: string;
   description?: string;
+  description_indonesia?: string;
   contact?: string;
   email?: string;
   address: string;

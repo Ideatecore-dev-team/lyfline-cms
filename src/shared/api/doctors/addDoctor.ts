@@ -14,6 +14,7 @@ export const addDoctor = async (
     qualifications: string[];
     languages: string[];
     description?: string;
+    description_indonesia?: string;
   },
   imageFile?: File | null
 ): Promise<Doctor> => {
@@ -39,6 +40,7 @@ export const addDoctor = async (
           doctor_qualification: doctorData.qualifications || [],
           doctor_language: doctorData.languages || [],
           description: doctorData.description || "",
+          description_indonesia: doctorData.description_indonesia || "",
           avatarUrl: imageUrl,
           type: "new",
         },

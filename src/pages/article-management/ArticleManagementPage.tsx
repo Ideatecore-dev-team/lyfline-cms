@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { type Article, getArticles, deleteArticle } from "../../shared/api/article";
+import { type Article, getArticles, deleteArticle, getConsistingCategories } from "../../shared/api/article";
 import Sidebar from "../../widgets/Sidebar";
 import Button from "../../component/button";
 import InputBox from "../../component/inputbox";
@@ -38,6 +38,7 @@ function ArticleManagementPage() {
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
+    const [availableCategories, setAvailableCategories] = useState<string[]>(DEFAULT_CATEGORIES);
 
     const [notification, setNotification] = useState<{
         isOpen: boolean;
@@ -65,10 +66,24 @@ function ArticleManagementPage() {
         }
     }, [location.state]);
 
+    // Load available unique categories from DB on mount
+    useEffect(() => {
+        const loadCategories = async () => {
+            try {
+                const existing = await getConsistingCategories();
+                const merged = Array.from(new Set([...DEFAULT_CATEGORIES, ...existing])).filter(Boolean);
+                setAvailableCategories(merged);
+            } catch (err) {
+                console.error("Error loading categories for filter:", err);
+            }
+        };
+        loadCategories();
+    }, []);
+
     // Filter states
     const [filterName, setFilterName] = useState("");
     const [filterCategory, setFilterCategory] = useState("");
-    const [filterSort, setFilterSort] = useState("newest");
+    const [filterSort, setFilterSort] = useState("updated");
 
     // Form / Navigation states
     const [articleToDelete, setArticleToDelete] = useState<Article | null>(null);
@@ -135,10 +150,6 @@ function ArticleManagementPage() {
         }
     };
 
-    // Calculate unique categories dynamically
-    const categories = Array.from(
-        new Set([...DEFAULT_CATEGORIES, ...articles.map((a) => a.category)])
-    ).filter(Boolean);
 
     const formatDate = (dateString: string) => {
         if (!dateString) return "-";
@@ -196,7 +207,7 @@ function ArticleManagementPage() {
                         placeholder="All Categories"
                         options={[
                             { value: "", label: "All Categories" },
-                            ...categories.map((c) => ({ value: c, label: c })),
+                            ...availableCategories.map((c) => ({ value: c, label: c })),
                         ]}
                         value={filterCategory}
                         onChange={(val) => setFilterCategory(val)}
@@ -205,11 +216,11 @@ function ArticleManagementPage() {
                     />
                     <Dropdown
                         label="Sort By"
-                        placeholder="Newest to Oldest"
+                        placeholder="Updated Recently"
                         options={[
+                            { value: "updated", label: "Updated Recently" },
                             { value: "newest", label: "Newest to Oldest" },
                             { value: "oldest", label: "Oldest to Newest" },
-                            { value: "updated", label: "Updated Recently" },
                         ]}
                         value={filterSort}
                         onChange={(val) => setFilterSort(val)}
@@ -302,10 +313,24 @@ function ArticleManagementPage() {
                                         </div>
                                         <div className="w-44 flex flex-col justify-center items-start shrink-0">
                                             <div className="w-full p-3 flex flex-col justify-center items-start overflow-hidden">
-                                                <Badge
-                                                    variant={getBadgeVariant(article.categoryColor)}
-                                                    text={article.category}
-                                                />
+                                                <div className="flex flex-wrap gap-1">
+                                                    {article.category.length > 1 ? (
+                                                        <Badge
+                                                            variant="gray"
+                                                            text={`${article.category.length} Categories`}
+                                                        />
+                                                    ) : article.category.length === 1 ? (
+                                                        <Badge
+                                                            variant={getBadgeVariant(article.categoryColor?.[0])}
+                                                            text={article.category[0]}
+                                                        />
+                                                    ) : (
+                                                        <Badge
+                                                            variant="gray"
+                                                            text="No Category"
+                                                        />
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="w-40 flex flex-col justify-center items-start shrink-0">

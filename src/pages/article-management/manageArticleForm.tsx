@@ -30,12 +30,14 @@ export default function ManageArticleForm() {
     const [currentUser] = useState(() => authApi.getCurrentUser());
 
     const [articleName, setArticleName] = useState("");
-    const [category, setCategory] = useState("Mental Health");
-    const [categoryColor, setCategoryColor] = useState("Blue");
+    const [articleNameIndonesia, setArticleNameIndonesia] = useState("");
+    const [categories, setCategories] = useState<string[]>(["Mental Health"]);
+    const [categoryColors, setCategoryColors] = useState<string[]>(["Blue"]);
     const [bannerUrl, setBannerUrl] = useState<string | null>(null);
     const [bannerFile, setBannerFile] = useState<File | null>(null);
     const [bannerRemoved, setBannerRemoved] = useState(false);
     const [content, setContent] = useState("");
+    const [contentIndonesia, setContentIndonesia] = useState("");
 
     const [submitting, setSubmitting] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -84,13 +86,18 @@ export default function ManageArticleForm() {
                 const article = await getArticleById(id);
                 if (article) {
                     setArticleName(article.title);
-                    setCategory(article.category);
+                    setArticleNameIndonesia(article.titleIndonesia || "");
+                    setCategories(article.category && article.category.length > 0 ? article.category : ["Mental Health"]);
+                    setCategoryColors(article.categoryColor && article.categoryColor.length > 0 ? article.categoryColor : ["Blue"]);
                     setContent(article.content || "");
-                    setCategoryColor(article.categoryColor || "Blue");
+                    setContentIndonesia(article.contentIndonesia || "");
                     setBannerUrl(article.imageUrl || null);
                     // Ensure the loaded article's category is added to the list of selectable options
-                    if (article.category) {
-                        setAvailableCategories((prev) => Array.from(new Set([...prev, article.category])));
+                    if (article.category && article.category.length > 0) {
+                        setAvailableCategories((prev) => {
+                            const newCategories = article.category.filter((cat) => !prev.includes(cat));
+                            return Array.from(new Set([...prev, ...newCategories]));
+                        });
                     }
                 } else {
                     showNotif("Article not found.", "error");
@@ -109,7 +116,10 @@ export default function ManageArticleForm() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!articleName.trim() || !category || !categoryColor) {
+        const validCategories = categories.map(c => c.trim()).filter(Boolean);
+        const validColors = categoryColors.map(c => c.trim()).filter(Boolean);
+
+        if (!articleName.trim() || validCategories.length === 0 || validColors.length === 0) {
             showNotif("Please fill out all required fields.", "error");
             return;
         }
@@ -120,7 +130,12 @@ export default function ManageArticleForm() {
         }
 
         if (!content.trim() || content === "<p><br></p>") {
-            showNotif("Article Content is required.", "error");
+            showNotif("Article Content (English) is required.", "error");
+            return;
+        }
+
+        if (!contentIndonesia.trim() || contentIndonesia === "<p><br></p>") {
+            showNotif("Article Content (Bahasa Indonesia) is required.", "error");
             return;
         }
 
@@ -128,9 +143,11 @@ export default function ManageArticleForm() {
         try {
             const articleData = {
                 title: articleName.trim(),
-                category: category,
-                categoryColor: categoryColor,
+                titleIndonesia: articleNameIndonesia.trim(),
+                category: validCategories,
+                categoryColor: validColors,
                 content: content,
+                contentIndonesia: contentIndonesia,
             };
 
             const msg = id
@@ -257,7 +274,7 @@ export default function ManageArticleForm() {
                             <InputBox
                                 label={
                                     <span>
-                                        Article Name <span className="text-red-500">*</span>
+                                        Article Name (English) <span className="text-red-500">*</span>
                                     </span>
                                 }
                                 placeholder="e.g. Understanding Mental Health"
@@ -267,52 +284,112 @@ export default function ManageArticleForm() {
                                 containerClassName="max-w-none"
                             />
 
-                            {/* Horizontal Dropdowns: Category & Category Color */}
-                            <div className="flex flex-col md:flex-row gap-6 w-full">
-                                <Dropdown
-                                    label={
-                                        <span>
-                                            Article Category <span className="text-red-500">*</span>
-                                        </span>
-                                    }
-                                    placeholder="Select Category"
-                                    options={availableCategories.map((c) => ({ value: c, label: c }))}
-                                    value={category}
-                                    onChange={(val) => setCategory(val)}
-                                    multiple={false}
-                                    allowCustomValues={true}
-                                    containerClassName="flex-1 max-w-none"
-                                />
+                            {/* Article Name (Bahasa Indonesia) Input */}
+                            <InputBox
+                                label={
+                                    <span>
+                                        Article Name (Bahasa Indonesia) <span className="text-red-500">*</span>
+                                    </span>
+                                }
+                                placeholder="mis. Memahami Kesehatan Mental"
+                                value={articleNameIndonesia}
+                                onChange={(e) => setArticleNameIndonesia(e.target.value)}
+                                required
+                                containerClassName="max-w-none"
+                            />
 
-                                <Dropdown
-                                    label={
-                                        <span>
-                                            Category Color <span className="text-red-500">*</span>
-                                        </span>
-                                    }
-                                    placeholder="Select Color"
-                                    options={[
-                                        { value: "Blue", label: <Badge variant="blue" text="Blue" />, searchLabel: "Blue" },
-                                        { value: "Green", label: <Badge variant="green" text="Green" />, searchLabel: "Green" },
-                                        { value: "Red", label: <Badge variant="red" text="Red" />, searchLabel: "Red" },
-                                        { value: "Yellow", label: <Badge variant="yellow" text="Yellow" />, searchLabel: "Yellow" },
-                                        { value: "Purple", label: <Badge variant="purple" text="Purple" />, searchLabel: "Purple" },
-                                        { value: "Orange", label: <Badge variant="orange" text="Orange" />, searchLabel: "Orange" },
-                                    ]}
-                                    value={categoryColor}
-                                    onChange={(val) => setCategoryColor(val)}
-                                    multiple={false}
-                                    containerClassName="w-full max-w-none md:w-80 md:max-w-xs shrink-0"
-                                    selectClassName="bg-white"
-                                />
+                            {/* Dynamic Categories & Colors */}
+                            <div className="flex flex-col gap-3 w-full">
+                                <div className="self-stretch px-2.5 py-2.5 bg-primary/10 rounded-xl flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-6">
+                                    <div className="w-full sm:w-121.5 flex justify-start items-center gap-3">
+                                        <Icon name="Document Align Left 5" className="size-5 bg-primary" />
+                                        <div className="justify-start">
+                                            <span className="text-primary text-base font-medium font-sans">Article Categories</span>
+                                            <span className="text-[#9EB7DA] text-base font-medium font-sans"> (Can be multiple)</span>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setCategories([...categories, "Mental Health"]);
+                                            setCategoryColors([...categoryColors, "Blue"]);
+                                        }}
+                                        className="h-9 w-full sm:w-9 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg outline-1 -outline-offset-1 outline-slate-500 flex justify-center items-center transition-all cursor-pointer active:scale-95 shrink-0"
+                                        title="Add Category"
+                                    >
+                                        <Icon name="Add" className="size-5 bg-slate-500" />
+                                    </button>
+                                </div>
+
+                                {categories.length === 0 ? (
+                                    <div className="self-stretch text-slate-400 text-sm font-normal font-sans pl-8 py-2">
+                                        To add Category click on the <span className="text-primary font-medium">Plus</span> Icon Button
+                                    </div>
+                                ) : (
+                                    categories.map((cat, index) => (
+                                        <div key={index} className="self-stretch flex flex-col md:flex-row items-stretch md:items-end gap-4 w-full pl-8 animate-in fade-in-50 duration-200">
+                                            <Dropdown
+                                                label={<span>Category {index + 1} <span className="text-red-500">*</span></span>}
+                                                placeholder="Select Category"
+                                                options={availableCategories.map((c) => ({ value: c, label: c }))}
+                                                value={cat}
+                                                onChange={(val) => {
+                                                    const updated = [...categories];
+                                                    updated[index] = val;
+                                                    setCategories(updated);
+                                                }}
+                                                multiple={false}
+                                                allowCustomValues={true}
+                                                containerClassName="flex-1 max-w-none"
+                                            />
+
+                                            <Dropdown
+                                                label={<span>Color {index + 1} <span className="text-red-500">*</span></span>}
+                                                placeholder="Select Color"
+                                                options={[
+                                                    { value: "Blue", label: <Badge variant="blue" text="Blue" />, searchLabel: "Blue" },
+                                                    { value: "Green", label: <Badge variant="green" text="Green" />, searchLabel: "Green" },
+                                                    { value: "Red", label: <Badge variant="red" text="Red" />, searchLabel: "Red" },
+                                                    { value: "Yellow", label: <Badge variant="yellow" text="Yellow" />, searchLabel: "Yellow" },
+                                                    { value: "Purple", label: <Badge variant="purple" text="Purple" />, searchLabel: "Purple" },
+                                                    { value: "Orange", label: <Badge variant="orange" text="Orange" />, searchLabel: "Orange" },
+                                                ]}
+                                                value={categoryColors[index] || "Blue"}
+                                                onChange={(val) => {
+                                                    const updated = [...categoryColors];
+                                                    updated[index] = val;
+                                                    setCategoryColors(updated);
+                                                }}
+                                                multiple={false}
+                                                containerClassName="w-full max-w-none md:w-64 md:max-w-xs shrink-0"
+                                                selectClassName="bg-white"
+                                            />
+
+                                            <div className="h-12 flex items-center shrink-0 justify-end">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setCategories(categories.filter((_, i) => i !== index));
+                                                        setCategoryColors(categoryColors.filter((_, i) => i !== index));
+                                                    }}
+                                                    className="size-9 bg-red-600 hover:bg-red-700 text-white rounded-lg flex justify-center items-center transition-all cursor-pointer active:scale-95"
+                                                    title="Delete Category"
+                                                >
+                                                    <Icon name="Delete 2" className="size-5 bg-current" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
 
                             {/* Article Content Editor */}
                             <ArticleEditor
                                 label="Article Content"
-                                value={content}
-                                onChange={setContent}
-                                required
+                                englishValue={content}
+                                onEnglishChange={setContent}
+                                indonesianValue={contentIndonesia}
+                                onIndonesianChange={setContentIndonesia}
                                 className="mb-6 sm:mb-0"
                             />
                         </div>

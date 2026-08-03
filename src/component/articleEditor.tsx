@@ -1,3 +1,4 @@
+import { useState } from "react";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 
@@ -12,11 +13,12 @@ const QuillEditor = ReactQuill as unknown as React.ComponentType<{
 
 interface ArticleEditorProps {
     label?: string;
-    value: string;
-    onChange: (value: string) => void;
+    englishValue: string;
+    onEnglishChange: (value: string) => void;
+    indonesianValue: string;
+    onIndonesianChange: (value: string) => void;
     placeholder?: string;
     className?: string;
-    required?: boolean;
 }
 
 const quillModules = {
@@ -46,12 +48,14 @@ const quillFormats = [
 
 export default function ArticleEditor({
     label,
-    value,
-    onChange,
+    englishValue,
+    onEnglishChange,
+    indonesianValue,
+    onIndonesianChange,
     placeholder = "Start writing your article content...",
     className = "",
-    required = false,
 }: ArticleEditorProps) {
+    const [activeTab, setActiveTab] = useState<"en" | "id">("en");
     return (
         <div className={`w-full inline-flex flex-col justify-start items-start gap-2 ${className}`}>
             <style>{`
@@ -162,20 +166,58 @@ export default function ArticleEditor({
             `}</style>
 
             {label && (
-                <label className="self-stretch justify-start text-primary text-sm font-normal font-sans">
-                    {label} {required && <span className="text-red-500">*</span>}
+                <label className="self-stretch justify-start text-primary text-sm font-normal font-sans mb-1">
+                    {label}
                 </label>
             )}
 
+            {/* Language Tabs */}
+            <div className="flex gap-2 mb-1">
+                <button
+                    type="button"
+                    onClick={() => setActiveTab("en")}
+                    className={`px-4 py-2 text-sm font-medium rounded-t-xl transition-all cursor-pointer ${
+                        activeTab === "en"
+                            ? "bg-primary text-white shadow-sm"
+                            : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                    }`}
+                >
+                    Content English <span className="text-red-500">*</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setActiveTab("id")}
+                    className={`px-4 py-2 text-sm font-medium rounded-t-xl transition-all cursor-pointer ${
+                        activeTab === "id"
+                            ? "bg-primary text-white shadow-sm"
+                            : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                    }`}
+                >
+                    Content Bahasa Indonesia <span className="text-red-500">*</span>
+                </button>
+            </div>
+
             <div className="article-editor-container self-stretch bg-white border border-[#9EB7DA]/50 rounded-[16px] overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
-                <QuillEditor
-                    theme="snow"
-                    value={value}
-                    onChange={onChange}
-                    modules={quillModules}
-                    formats={quillFormats}
-                    placeholder={placeholder}
-                />
+                <div style={{ display: activeTab === "en" ? "block" : "none" }}>
+                    <QuillEditor
+                        theme="snow"
+                        value={englishValue}
+                        onChange={onEnglishChange}
+                        modules={quillModules}
+                        formats={quillFormats}
+                        placeholder={placeholder}
+                    />
+                </div>
+                <div style={{ display: activeTab === "id" ? "block" : "none" }}>
+                    <QuillEditor
+                        theme="snow"
+                        value={indonesianValue}
+                        onChange={onIndonesianChange}
+                        modules={quillModules}
+                        formats={quillFormats}
+                        placeholder={placeholder}
+                    />
+                </div>
             </div>
         </div>
     );

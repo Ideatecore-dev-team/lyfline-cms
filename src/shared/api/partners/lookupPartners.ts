@@ -7,6 +7,7 @@ interface PartnerRow {
   city: string;
   country: string;
   description?: string | null;
+  description_indonesia?: string | null;
   contact?: string | null;
   email?: string | null;
   address: string;
@@ -24,6 +25,7 @@ export const mapPartnerRow = (row: PartnerRow): Partner => ({
   city: row.city,
   country: row.country,
   description: row.description || undefined,
+  description_indonesia: row.description_indonesia || undefined,
   contact: row.contact || undefined,
   email: row.email || undefined,
   address: row.address,

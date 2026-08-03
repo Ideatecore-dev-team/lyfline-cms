@@ -46,6 +46,7 @@ export const addPartner = async (
           city: partnerData.city,
           country: partnerData.country,
           description: partnerData.description || null,
+          description_indonesia: partnerData.description_indonesia || null,
           contact: partnerData.contact || null,
           email: partnerData.email || null,
           address: partnerData.address,

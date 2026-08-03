@@ -19,6 +19,9 @@ function LoginPage() {
     if (location.state?.successMessage) {
       setSuccess(location.state.successMessage);
       window.history.replaceState({}, document.title);
+    } else if (location.state?.errorMessage) {
+      setError(location.state.errorMessage);
+      window.history.replaceState({}, document.title);
     }
   }, [location.state]);
 

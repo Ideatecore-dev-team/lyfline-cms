@@ -1,9 +1,29 @@
-import { Outlet, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import CmsNavbar from "../../widgets/Navbar";
 import Sidebar from "../../widgets/Sidebar";
+import { authApi } from "../../shared/api/auth";
 
 const CmsLayout = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const verifySession = () => {
+      if (!authApi.checkSession()) {
+        navigate("/cms", {
+          state: { errorMessage: "Session expired after 5 hours. Please log in again." },
+          replace: true
+        });
+      }
+    };
+
+    verifySession();
+
+    const interval = setInterval(verifySession, 30000);
+    return () => clearInterval(interval);
+  }, [location.pathname, navigate]);
+
   const hasInternalSidebar =
     ["/cms/users", "/cms/promo", "/cms/partners", "/cms/doctors", "/cms/article", "/cms/media"].includes(location.pathname) ||
     location.pathname.startsWith("/cms/partners/") ||

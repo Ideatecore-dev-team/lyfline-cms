@@ -83,17 +83,51 @@ export const authApi = {
     const token = authData.session?.access_token || `custom-session-token-${profileData.id}`;
     localStorage.setItem('lyfline_token', token);
     localStorage.setItem('lyfline_current_user', JSON.stringify(userProfile));
+    localStorage.setItem('lyfline_login_time', Date.now().toString());
 
     return { token, user: userProfile };
   },
 
   logout: async (): Promise<void> => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error("Supabase signOut error:", e);
+    }
     localStorage.removeItem('lyfline_token');
     localStorage.removeItem('lyfline_current_user');
+    localStorage.removeItem('lyfline_login_time');
+  },
+
+  checkSession: (): boolean => {
+    const token = localStorage.getItem('lyfline_token');
+    const loginTimeStr = localStorage.getItem('lyfline_login_time');
+
+    if (!token) return false;
+
+    if (loginTimeStr) {
+      const loginTime = parseInt(loginTimeStr, 10);
+      if (!isNaN(loginTime) && Date.now() - loginTime > 5 * 60 * 60 * 1000) {
+        // Clear session synchronously from localStorage
+        localStorage.removeItem('lyfline_token');
+        localStorage.removeItem('lyfline_current_user');
+        localStorage.removeItem('lyfline_login_time');
+        // Asynchronously sign out of supabase to invalidate server-side session
+        supabase.auth.signOut().catch(console.error);
+        return false;
+      }
+    } else {
+      // If token exists but no timestamp, set it now to begin the 5-hour countdown.
+      localStorage.setItem('lyfline_login_time', Date.now().toString());
+    }
+
+    return true;
   },
 
   getCurrentUser: (): User | null => {
+    if (!authApi.checkSession()) {
+      return null;
+    }
     const userStr = localStorage.getItem('lyfline_current_user');
     return userStr ? JSON.parse(userStr) : null;
   }

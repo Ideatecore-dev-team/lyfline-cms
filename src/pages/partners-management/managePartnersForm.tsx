@@ -34,6 +34,7 @@ export default function ManagePartnersForm() {
     const [city, setCity] = useState("");
     const [country, setCountry] = useState("Indonesia");
     const [description, setDescription] = useState("");
+    const [descriptionIndonesia, setDescriptionIndonesia] = useState("");
     const [hospitalContact, setHospitalContact] = useState("");
     const [hospitalEmail, setHospitalEmail] = useState("");
     const [hospitalAddress, setHospitalAddress] = useState("");
@@ -75,6 +76,7 @@ export default function ManagePartnersForm() {
                     setCity(partner.city);
                     setCountry(partner.country);
                     setDescription(partner.description || "");
+                    setDescriptionIndonesia(partner.description_indonesia || "");
                     setHospitalContact(partner.contact || "");
                     setHospitalEmail(partner.email || "");
                     setHospitalAddress(partner.address);
@@ -128,6 +130,7 @@ export default function ManagePartnersForm() {
                 city: city.trim(),
                 country,
                 description: description.trim(),
+                description_indonesia: descriptionIndonesia.trim(),
                 contact: hospitalContact.trim(),
                 email: hospitalEmail.trim(),
                 address: hospitalAddress.trim(),
@@ -318,6 +321,15 @@ export default function ManagePartnersForm() {
                                 placeholder="Write something about the partner..."
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
+                                containerClassName="max-w-none"
+                            />
+
+                            {/* Partner Description ( Bahasa Indonesia ) */}
+                            <DescriptionBox
+                                label="Description (For Bahasa Indonesia)"
+                                placeholder="Tulis deskripsi tentang rumah sakit..."
+                                value={descriptionIndonesia}
+                                onChange={(e) => setDescriptionIndonesia(e.target.value)}
                                 containerClassName="max-w-none"
                             />
                         </div>
