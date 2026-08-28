@@ -261,6 +261,13 @@ function DoctorManagementPage() {
                                         </div>
                                     </div>
                                 </div>
+                                <div className="w-32 flex flex-col justify-center items-start shrink-0 min-w-0">
+                                    <div className="w-full flex-1 px-3 py-4 flex justify-start items-center gap-2 overflow-hidden min-w-0">
+                                        <div className="justify-start text-primary text-sm font-medium font-['Poppins'] truncate">
+                                            Type
+                                        </div>
+                                    </div>
+                                </div>
                                 <div className="w-28 flex flex-col justify-center items-start shrink-0">
                                     <div className="w-full flex-1 px-3 py-4 flex justify-start items-center gap-2 overflow-hidden">
                                         <div className="justify-start text-primary text-sm font-medium font-['Poppins']">
@@ -320,6 +327,24 @@ function DoctorManagementPage() {
                                                 >
                                                     {doctor.country}
                                                 </div>
+                                            </div>
+                                        </div>
+                                        <div className="w-32 flex flex-col justify-center items-start shrink-0 min-w-0">
+                                            <div className="w-full flex-1 p-3 flex flex-col justify-center items-start overflow-hidden min-w-0">
+                                                {doctor.type ? (
+                                                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider border ${
+                                                        doctor.type.toLowerCase() === 'new'
+                                                            ? 'bg-emerald-50/80 text-emerald-600 border-emerald-200/60'
+                                                            : 'bg-indigo-50/80 text-indigo-600 border-indigo-200/60'
+                                                    }`}>
+                                                        <span className={`size-1 rounded-full ${
+                                                            doctor.type.toLowerCase() === 'new' ? 'bg-emerald-500' : 'bg-indigo-500'
+                                                        }`} />
+                                                        {doctor.type}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-slate-400 font-normal">-</span>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="w-28 px-3 flex justify-start items-center gap-4 py-2 shrink-0">
