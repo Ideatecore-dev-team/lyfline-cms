@@ -35,6 +35,7 @@ export default function ManageDoctorsForm() {
     const [imageRemoved, setImageRemoved] = useState(false);
     const [description, setDescription] = useState("");
     const [descriptionIndonesia, setDescriptionIndonesia] = useState("");
+    const [doctorType, setDoctorType] = useState<string | undefined>(undefined);
 
     // Partnerships for dropdown lookup
     const [partners, setPartners] = useState<Partner[]>([]);
@@ -95,6 +96,7 @@ export default function ManageDoctorsForm() {
                     setLanguages(doctor.languages || []);
                     setDescription(doctor.description || "");
                     setDescriptionIndonesia(doctor.description_indonesia || "");
+                    setDoctorType(doctor.type);
                 } else {
                     showNotif("Doctor not found.", "error");
                 }
@@ -218,7 +220,7 @@ export default function ManageDoctorsForm() {
                 />
 
                 {/* Header Block */}
-                <div className="self-stretch inline-flex justify-start items-start gap-6">
+                <div className="self-stretch flex flex-row justify-between items-start gap-6">
                     <div className="flex-1 inline-flex flex-col justify-start items-start gap-2">
                         <div className="self-stretch justify-start text-[#9EB7DA] text-sm font-normal font-sans tracking-wider uppercase">
                             DOCTOR FORM
@@ -226,6 +228,19 @@ export default function ManageDoctorsForm() {
                         <div className="self-stretch justify-start text-black text-2xl font-medium font-sans">
                             Doctor Information
                         </div>
+                    </div>
+                    {/* Badge */}
+                    <div className="shrink-0 flex items-center pt-2">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider border shadow-sm transition-all duration-300 hover:shadow-md ${
+                            (doctorType || "new").toLowerCase() === 'new'
+                                ? 'bg-emerald-50/80 text-emerald-600 border-emerald-200/60'
+                                : 'bg-indigo-50/80 text-indigo-600 border-indigo-200/60'
+                        }`}>
+                            <span className={`size-1.5 rounded-full ${
+                                (doctorType || "new").toLowerCase() === 'new' ? 'bg-emerald-500' : 'bg-indigo-500'
+                            }`} />
+                            Type: {doctorType || "new"}
+                        </span>
                     </div>
                 </div>
 
