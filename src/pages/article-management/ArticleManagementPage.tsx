@@ -326,8 +326,8 @@ function ArticleManagementPage() {
                                                         />
                                                     ) : (
                                                         <Badge
-                                                            variant={getBadgeVariant(article.categoryColor as any)}
-                                                            text={article.category as any}
+                                                            variant="gray"
+                                                            text="No Category"
                                                         />
                                                     )}
                                                 </div>
