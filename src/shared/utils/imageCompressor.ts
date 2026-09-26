@@ -1,18 +1,40 @@
 /**
  * Utility to compress images in the browser using the Canvas API.
- * Converts any image format (JPEG, PNG, etc.) to compressed WebP before uploading.
+ * Compresses image before uploading. Uses WebP if supported, falls back to JPEG.
+ * Server (Sharp) will always convert the final output to WebP regardless of format.
  */
+
+/**
+ * Detects if the current browser supports WebP encoding via Canvas API.
+ * Safari <= 15 does NOT support canvas.toBlob("image/webp").
+ */
+const supportsWebPEncoding = (): boolean => {
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    return canvas.toDataURL("image/webp").startsWith("data:image/webp");
+  } catch {
+    return false;
+  }
+};
+
 export const compressImage = (
   file: File,
   maxWidth = 1920,
   maxHeight = 1080,
   quality = 0.75
 ): Promise<File | Blob> => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     // Only compress image files
     if (!file.type.startsWith("image/")) {
       return resolve(file);
     }
+
+    // Determine the output format based on browser capability
+    const webpSupported = supportsWebPEncoding();
+    const outputMimeType = webpSupported ? "image/webp" : "image/jpeg";
+    const outputExtension = webpSupported ? ".webp" : ".jpg";
 
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -42,32 +64,33 @@ export const compressImage = (
 
         const ctx = canvas.getContext("2d");
         if (!ctx) {
-          return reject(new Error("Canvas 2D context is not available"));
+          return resolve(file);
         }
 
         // Draw image onto canvas
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Convert canvas to WebP blob
+        // Convert canvas to blob (WebP or JPEG)
         canvas.toBlob(
           (blob) => {
             if (!blob) {
-              return reject(new Error("Image compression failed. Blob is null."));
+              return resolve(file);
             }
-            // Construct a new file name with .webp extension
+            // Construct a new file name with matching extension
             const originalNameWithoutExt = file.name.substring(0, file.name.lastIndexOf(".")) || file.name;
-            const compressedFile = new File([blob], `${originalNameWithoutExt}.webp`, {
-              type: "image/webp",
+            const compressedFile = new File([blob], `${originalNameWithoutExt}${outputExtension}`, {
+              type: outputMimeType,
               lastModified: Date.now(),
             });
             resolve(compressedFile);
           },
-          "image/webp",
+          outputMimeType,
           quality
         );
       };
-      img.onerror = (err) => reject(err);
+      img.onerror = () => resolve(file);
     };
-    reader.onerror = (err) => reject(err);
+    reader.onerror = () => resolve(file);
   });
 };
+

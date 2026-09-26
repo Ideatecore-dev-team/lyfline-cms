@@ -23,10 +23,12 @@ export const uploadImage = async (
   let finalName = filename;
 
   if (filename) {
-    // If the file extension changed due to webp compression, update filename suffix if present
-    if (fileToUpload.type === "image/webp" && !filename.endsWith(".webp")) {
-      const originalNameWithoutExt = filename.substring(0, filename.lastIndexOf(".")) || filename;
+    const compressedType = fileToUpload.type;
+    const originalNameWithoutExt = filename.substring(0, filename.lastIndexOf(".")) || filename;
+    if (compressedType === "image/webp" && !filename.endsWith(".webp")) {
       finalName = `${originalNameWithoutExt}.webp`;
+    } else if (compressedType === "image/jpeg" && !filename.endsWith(".jpg") && !filename.endsWith(".jpeg")) {
+      finalName = `${originalNameWithoutExt}.jpg`;
     }
     formData.append("image", fileToUpload, finalName);
   } else {
